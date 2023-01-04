@@ -21,6 +21,8 @@ class TextEmbeddingLSTM(nn.Module):
 
         outputs, (hidden, cell) = self.lstm(embeddings, (h0, c0))
 
-        text_embedding = self.tem(hidden)
+        h_sum = torch.sum(outputs, dim=1)
+
+        text_embedding = self.tem(h_sum)
 
         return text_embedding
