@@ -16,11 +16,11 @@ class StageIDiscriminator(nn.Module):
         self.compress = nn.Linear(tem_size, Nd)
 
         # 1x1 conv for channel adjustment
-        self.channel_resize = nn.Conv2d(64 * 8 + Nd, (64 * 8 + Nd) / 2, 1, 1, 0)
+        self.channel_resize = nn.Conv2d(64 * 8 + Nd, int((64 * 8 + Nd) / 2), 1, 1, 0)
 
         self.flatten = nn.Flatten()
 
-        self.classifier = nn.Linear(((64 * 8 + Nd) / 2) * 4 * 4, 1)
+        self.classifier = nn.Linear(int((64 * 8 + Nd) / 2) * 4 * 4, 1)
 
     def downsampling_block(
         self, in_channels, out_channels, kernel_size, stride, padding
@@ -41,7 +41,7 @@ class StageIDiscriminator(nn.Module):
     def forward(self, img, tem):
         x = self.down_sampler(img)
         compressed_em = self.compress(tem)
-        em_to_fm = compressed_em.resize(
+        em_to_fm = compressed_em.reshape(
             compressed_em.shape[0], compressed_em.shape[1], 1, 1
         )
         replicated_fm = em_to_fm.repeat(1, 1, 4, 4)
@@ -49,5 +49,9 @@ class StageIDiscriminator(nn.Module):
         text_img_fm = self.channel_resize(concatenated_fm)
         flattened_vec = self.flatten(text_img_fm)
         score = self.classifier(flattened_vec)
-        output = F.sigmoid(score)
+        output = torch.sigmoid(score)
         return output
+
+if __name__ == "__main__":
+    discriminator = StageIDiscriminator(300, 128)
+    print(discriminator(torch.randn(1, 3, 64, 64), torch.randn(1, 300)))
