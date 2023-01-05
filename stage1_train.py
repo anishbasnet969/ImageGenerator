@@ -1,13 +1,5 @@
 from stage1GAN import *
-
-transform = transforms.Compose([transforms.Resize((64, 64)), transforms.PILToTensor()])
-
-loader, dataset = get_loader(
-    "data/annotations/captions_train2017.json",
-    "data/train2017/",
-    transform=transform,
-)
-
+from data_loader import loader
 
 
 # def train_GAN(loader, ):

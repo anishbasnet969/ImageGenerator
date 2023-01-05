@@ -6,11 +6,11 @@ from preprocessing import *
 from discrminator_1 import StageIDiscriminator
 from con_augment import ConditioningAugmentation
 from generator_1 import StageIGenerator
+from data_loader import VOCAB_SIZE
 
 
 EMBEDDING_SIZE = 300
 TEXT_EMBEDDING_HIDDEN_SIZE = 300
-VOCAB_SIZE = len(dataset.vocab)
 TEXT_EMBEDDING_NUM_LAYERS = 2
 TEM_SIZE = 400
 
@@ -39,10 +39,11 @@ class CAGenI(nn.Module):
 class TextConGenerator(nn.Module):
     def __init__(self, c_dim):
         super(TextConGenerator, self).__init__()
+        self.textEmbedder = textEmbedder
         self.gen = CAGenI(c_dim)
 
     def forward(self, desc_tokens, noise):
-        tem = textEmbedder(desc_tokens)
+        tem = self.textEmbedder(desc_tokens)
         img_output, mu, sigma = self.gen(tem, noise)
         return img_output, mu, sigma
 
@@ -50,9 +51,10 @@ class TextConGenerator(nn.Module):
 class TextAwareDiscriminator(nn.Module):
     def __init__(self, Nd):
         super(TextAwareDiscriminator, self).__init__()
+        self.textEmbedder = textEmbedder
         self.disc = StageIDiscriminator(TEM_SIZE, Nd)
 
     def forward(self, img, desc_tokens):
-        tem = textEmbedder(desc_tokens)
+        tem = self.textEmbedder(desc_tokens)
         output = self.disc(img, tem)
         return output
