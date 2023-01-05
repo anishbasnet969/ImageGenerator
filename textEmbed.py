@@ -22,9 +22,9 @@ class TextEmbeddingLSTM(nn.Module):
         outputs, _ = self.lstm(embeddings, (h0, c0))
 
         h_sum = torch.sum(outputs, dim=1)
-
+        print(h_sum.shape)
         text_embedding = self.tem(h_sum)
-
+        print(text_embedding.shape)
         return text_embedding
 
 

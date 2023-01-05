@@ -31,7 +31,8 @@ class CAGenI(nn.Module):
 
     def forward(self, tem, noise):
         c_hat, mu, sigma = self.con_augment(tem)
-        lc = torch.cat((c_hat, noise), dim=1)
+        print(c_hat.shape)
+        lc = torch.cat((noise, c_hat), dim=1)
         img_output = self.gen(lc)
         return img_output, mu, sigma
 
@@ -39,11 +40,10 @@ class CAGenI(nn.Module):
 class TextConGenerator(nn.Module):
     def __init__(self, c_dim, z_dim):
         super(TextConGenerator, self).__init__()
-        self.textEmbedder = textEmbedder
         self.gen = CAGenI(c_dim, z_dim)
 
     def forward(self, desc_tokens, noise):
-        tem = self.textEmbedder(desc_tokens)
+        tem = textEmbedder(desc_tokens)
         img_output, mu, sigma = self.gen(tem, noise)
         return img_output, mu, sigma
 
@@ -51,10 +51,9 @@ class TextConGenerator(nn.Module):
 class TextAwareDiscriminator(nn.Module):
     def __init__(self, Nd):
         super(TextAwareDiscriminator, self).__init__()
-        self.textEmbedder = textEmbedder
         self.disc = StageIDiscriminator(TEM_SIZE, Nd)
 
     def forward(self, img, desc_tokens):
-        tem = self.textEmbedder(desc_tokens)
+        tem = textEmbedder(desc_tokens)
         output = self.disc(img, tem)
         return output

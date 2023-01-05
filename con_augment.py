@@ -22,3 +22,7 @@ class ConditioningAugmentation(nn.Module):
         epsilon = torch.randn_like(sigma)
         c_hat = mu + sigma * epsilon
         return c_hat, mu, sigma
+
+
+if __name__ == "__main__":
+    pass

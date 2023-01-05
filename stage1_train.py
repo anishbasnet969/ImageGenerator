@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from stage1GAN import TextConGenerator, TextAwareDiscriminator
+from stage1GAN import TextConGenerator, TextAwareDiscriminator, textEmbedder
 from data_loader import loader, batch_size
+torch.autograd.set_detect_anomaly(True)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cpu"
 
 lr = 3e-4
 c_dim = 128
@@ -18,11 +19,13 @@ gen = TextConGenerator(c_dim, z_dim).to(device)
 
 opt_disc = optim.Adam(disc.parameters(), lr=lr)
 opt_gen = optim.Adam(gen.parameters(), lr=lr)
+opt_text = optim.Adam(textEmbedder.parameters(), lr=lr)
 criterion = nn.BCELoss()
 
 for epoch in range(num_epochs):
     for idx, (desc_tokens, real_img) in enumerate(loader):
         real_img = real_img.to(device)
+        desc_tokens = desc_tokens.to(device)
 
         noise = torch.randn(batch_size, z_dim).to(device)
         fake, mu, sigma = gen(desc_tokens, noise)
@@ -42,6 +45,9 @@ for epoch in range(num_epochs):
         opt_gen.zero_grad()
         lossG.backward()
         opt_gen.step()
+
+        opt_text.step()
+        opt_text.zero_grad() #4 am thoughts
 
         print(
             f"batch:{idx}, epoch:{epoch}, discLoss:{lossD.item()}, genLoss:{lossG.item()}"
