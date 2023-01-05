@@ -39,7 +39,7 @@ class StageIDiscriminator(nn.Module):
         )
 
     def forward(self, img, tem):
-        x = self.down_sampler(x)
+        x = self.down_sampler(img)
         compressed_em = self.compress(tem)
         em_to_fm = compressed_em.resize(
             compressed_em.shape[0], compressed_em.shape[1], 1, 1
