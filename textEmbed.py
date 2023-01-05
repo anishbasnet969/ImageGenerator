@@ -20,7 +20,6 @@ class TextEmbeddingLSTM(nn.Module):
         c0 = torch.zeros(self.num_layers * 2, texts.size(0), self.hidden_size)
 
         outputs, _ = self.lstm(embeddings, (h0, c0))
-        print(outputs.shape)
 
         h_sum = torch.sum(outputs, dim=1)
 

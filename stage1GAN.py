@@ -24,10 +24,10 @@ textEmbedder = TextEmbeddingLSTM(
 
 
 class CAGenI(nn.Module):
-    def __init__(self, c_dim):
+    def __init__(self, c_dim, z_dim):
         super(CAGenI, self).__init__()
         self.con_augment = ConditioningAugmentation(TEM_SIZE, 300, 200, c_dim)
-        self.gen = StageIGenerator(c_dim, 100)
+        self.gen = StageIGenerator(c_dim, z_dim)
 
     def forward(self, tem, noise):
         c_hat, mu, sigma = self.con_augment(tem)
@@ -37,10 +37,10 @@ class CAGenI(nn.Module):
 
 
 class TextConGenerator(nn.Module):
-    def __init__(self, c_dim):
+    def __init__(self, c_dim, z_dim):
         super(TextConGenerator, self).__init__()
         self.textEmbedder = textEmbedder
-        self.gen = CAGenI(c_dim)
+        self.gen = CAGenI(c_dim, z_dim)
 
     def forward(self, desc_tokens, noise):
         tem = self.textEmbedder(desc_tokens)
