@@ -45,7 +45,7 @@ class StageIDiscriminator(nn.Module):
             compressed_em.shape[0], compressed_em.shape[1], 1, 1
         )
         replicated_fm = em_to_fm.repeat(1, 1, 4, 4)
-        concatenated_fm = torch.cat(x, replicated_fm, dim=1)
+        concatenated_fm = torch.cat((x, replicated_fm), dim=1)
         text_img_fm = self.channel_resize(concatenated_fm)
         flattened_vec = self.flatten(text_img_fm)
         score = self.classifier(flattened_vec)
