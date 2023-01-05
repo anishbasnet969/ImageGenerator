@@ -38,19 +38,20 @@ class StageIDiscriminator(nn.Module):
             nn.LeakyReLU(0.1),
         )
 
-    # def forward(self, img, tem):
-    #     x = self.down_sampler(img)
-    #     compressed_em = self.compress(tem)
-    #     em_to_fm = compressed_em.resize(
-    #         compressed_em.shape[0], compressed_em.shape[1], 1, 1
-    #     )
-    #     replicated_fm = em_to_fm.repeat(1, 1, 4, 4)
-    #     concatenated_fm = torch.cat(x, replicated_fm, dim=1)
-    #     text_img_fm = self.channel_resize(concatenated_fm)
-    #     flattened_vec = self.flatten(text_img_fm)
-    #     score = self.classifier(flattened_vec)
-    #     output = F.sigmoid(score)
-    #     return output
+    def forward(self, img, tem):
+        x = self.down_sampler(img)
+        compressed_em = self.compress(tem)
+        em_to_fm = compressed_em.reshape(
+            compressed_em.shape[0], compressed_em.shape[1], 1, 1
+        )
+        replicated_fm = em_to_fm.repeat(1, 1, 4, 4)
+        concatenated_fm = torch.cat((x, replicated_fm), dim=1)
+        text_img_fm = self.channel_resize(concatenated_fm)
+        flattened_vec = self.flatten(text_img_fm)
+        score = self.classifier(flattened_vec)
+        output = torch.sigmoid(score)
+        return output
 
 if __name__ == "__main__":
-    print(StageIDiscriminator(300, 128))
+    discriminator = StageIDiscriminator(300, 128)
+    print(discriminator(torch.randn(1, 3, 64, 64), torch.randn(1, 300)))
