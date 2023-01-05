@@ -120,9 +120,11 @@ def get_loader(ann_file, img_dir, transform, batch_size=32, shuffle=True):
 
 # transform = transforms.Compose([transforms.Resize((64, 64)), transforms.PILToTensor()])
 
-# loader = get_loader(
+# loader, dataset = get_loader(
 #     "data/annotations/captions_train2017.json", "data/train2017/", transform=transform
-# )[0]
+# )
+
+# print(len(dataset.vocab))
 
 # for idx, (texts, imgs) in enumerate(loader):
 #     print(texts.shape)
