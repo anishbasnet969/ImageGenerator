@@ -37,9 +37,9 @@ class CAGenI(nn.Module):
         return img_output, mu, sigma
 
 
-class TextConGenerator(nn.Module):
+class TextConGeneratorI(nn.Module):
     def __init__(self, c_dim, z_dim):
-        super(TextConGenerator, self).__init__()
+        super(TextConGeneratorI, self).__init__()
         self.gen = CAGenI(c_dim, z_dim)
 
     def forward(self, desc_tokens, noise):
@@ -48,9 +48,9 @@ class TextConGenerator(nn.Module):
         return img_output, mu, sigma
 
 
-class TextAwareDiscriminator(nn.Module):
+class TextAwareDiscriminatorI(nn.Module):
     def __init__(self, Nd):
-        super(TextAwareDiscriminator, self).__init__()
+        super(TextAwareDiscriminatorI, self).__init__()
         self.disc = StageIDiscriminator(TEM_SIZE, Nd)
 
     def forward(self, img, desc_tokens):
