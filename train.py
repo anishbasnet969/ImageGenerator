@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torchvision.transforms as transforms
 
 from stage1GAN import TextConGeneratorI, TextAwareDiscriminatorI, textEmbedder
 from stage2GAN import TextConGeneratorII, TextAwareDiscriminatorII
-from data_loader import loader, batch_size
+from preprocess_glove import get_loader
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -15,6 +16,7 @@ c_dim = 128
 z_dim = 100
 Nd = 128
 num_epochs = 50
+batch_size = 32
 
 disc_1 = TextAwareDiscriminatorI(Nd).to(device)
 gen_1 = TextConGeneratorI(c_dim, z_dim).to(device)
@@ -32,13 +34,36 @@ opt_gen_2 = optim.Adam(gen_2.parameters(), lr=lr)
 
 criterion = nn.BCELoss()
 
+my_transform_1 = transforms.Compose(
+    [transforms.PILToTensor(), transforms.Resize((64, 64))]
+)
 
-def train_1(models, optimizers, criterion, train_dl, num_epochs, device=device):
+my_transform_2 = transforms.Compose(
+    [transforms.PILToTensor(), transforms.Resize((256, 256))]
+)
+
+
+train_dl_1 = get_loader(
+    root="data/train2017",
+    annFile="data/annotations/captions_train2017.json",
+    transform=my_transform_1,
+    batch_size=batch_size,
+)
+
+train_dl_2 = get_loader(
+    root="data/train2017",
+    annFile="data/annotations/captions_train2017.json",
+    transform=my_transform_2,
+    batch_size=batch_size,
+)
+
+
+def train_1(models, optimizers, criterion, train_dl_1, num_epochs, device=device):
     disc_1, gen_1 = models
     opt_disc_1, opt_gen_1, opt_text = optimizers
 
     for epoch in range(num_epochs):
-        for idx, (desc_tokens, real_img) in enumerate(train_dl):
+        for idx, (desc_tokens, real_img) in enumerate(train_dl_1):
             real_img = real_img.to(device)
             desc_tokens = desc_tokens.to(device)
 
@@ -71,12 +96,12 @@ def train_1(models, optimizers, criterion, train_dl, num_epochs, device=device):
             )
 
 
-def train_2(models, optimizers, criterion, train_dl, num_epochs, device=device):
+def train_2(models, optimizers, criterion, train_dl_2, num_epochs, device=device):
     gen_1, disc_2, gen_2 = models
     opt_disc_2, opt_gen_2 = optimizers
 
     for epoch in range(num_epochs):
-        for idx, (desc_tokens, real_img_256) in enumerate(train_dl):
+        for idx, (desc_tokens, real_img_256) in enumerate(train_dl_2):
             real_img_256 = real_img_256.to(device)
             desc_tokens = desc_tokens.to(device)
 

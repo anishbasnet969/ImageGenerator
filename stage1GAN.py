@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 
 from textEmbed import TextEmbeddingLSTM
-from preprocessing import *
+from custom_dataloader import *
 from discrminator_1 import StageIDiscriminator
 from con_augment import ConditioningAugmentation
 from generator_1 import StageIGenerator
-from data_loader import VOCAB_SIZE
+from preprocess_glove import VOCAB_SIZE
 
 
 EMBEDDING_SIZE = 300
