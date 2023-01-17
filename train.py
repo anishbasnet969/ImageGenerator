@@ -63,37 +63,38 @@ def train_1(models, optimizers, criterion, train_dl_1, num_epochs, device=device
     opt_disc_1, opt_gen_1, opt_text = optimizers
 
     for epoch in range(num_epochs):
-        for idx, (desc_tokens, real_img) in enumerate(train_dl_1):
+        for idx, (real_img, li_desc_tokens) in enumerate(train_dl_1):
             real_img = real_img.to(device)
-            desc_tokens = desc_tokens.to(device)
+            li_desc_tokens = li_desc_tokens.to(device)
 
-            noise = torch.randn(batch_size, z_dim).to(device)
-            fake, mu1, sigma1 = gen_1(desc_tokens, noise)
-            disc_real = disc_1(real_img, desc_tokens).view(-1)
-            lossD_real = criterion(disc_real, torch.ones_like(disc_real))
-            disc_fake = disc_1(fake, desc_tokens).view(-1)
-            lossD_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
-            lossD = lossD_real + lossD_fake
-            opt_disc_1.zero_grad()
-            lossD.backward(retain_graph=True)
-            opt_disc_1.step()
+            for desc_tokens in li_desc_tokens:
+                noise = torch.randn(batch_size, z_dim).to(device)
+                fake, mu1, sigma1 = gen_1(desc_tokens, noise)
+                disc_real = disc_1(real_img, desc_tokens).view(-1)
+                lossD_real = criterion(disc_real, torch.ones_like(disc_real))
+                disc_fake = disc_1(fake, desc_tokens).view(-1)
+                lossD_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
+                lossD = lossD_real + lossD_fake
+                opt_disc_1.zero_grad()
+                lossD.backward(retain_graph=True)
+                opt_disc_1.step()
 
-            output = disc_1(fake, desc_tokens).view(-1)
-            lossG_fake = criterion(output, torch.ones_like(output))
-            kl_div = torch.sum(
-                1 + torch.log(sigma1.pow(2)) - mu1.pow(2) - sigma1.pow(2)
-            )
-            lossG = lossG_fake + kl_div
-            opt_gen_1.zero_grad()
-            lossG.backward()
-            opt_gen_1.step()
+                output = disc_1(fake, desc_tokens).view(-1)
+                lossG_fake = criterion(output, torch.ones_like(output))
+                kl_div = torch.sum(
+                    1 + torch.log(sigma1.pow(2)) - mu1.pow(2) - sigma1.pow(2)
+                )
+                lossG = lossG_fake + kl_div
+                opt_gen_1.zero_grad()
+                lossG.backward()
+                opt_gen_1.step()
 
-            opt_text.step()
-            opt_text.zero_grad()  # 4 am thoughts
+                opt_text.step()
+                opt_text.zero_grad()  # 4 am thoughts
 
-            print(
-                f"batch:{idx}, epoch:{epoch}, disc1Loss:{lossD.item()}, gen1Loss:{lossG.item()}"
-            )
+                print(
+                    f"batch:{idx}, epoch:{epoch}, disc1Loss:{lossD.item()}, gen1Loss:{lossG.item()}"
+                )
 
 
 def train_2(models, optimizers, criterion, train_dl_2, num_epochs, device=device):
@@ -101,32 +102,33 @@ def train_2(models, optimizers, criterion, train_dl_2, num_epochs, device=device
     opt_disc_2, opt_gen_2 = optimizers
 
     for epoch in range(num_epochs):
-        for idx, (desc_tokens, real_img_256) in enumerate(train_dl_2):
+        for idx, (real_img_256, li_desc_tokens) in enumerate(train_dl_2):
             real_img_256 = real_img_256.to(device)
-            desc_tokens = desc_tokens.to(device)
+            li_desc_tokens = li_desc_tokens.to(device)
 
-            noise = torch.randn(batch_size, z_dim).to(device)
-            fake_64 = gen_1(desc_tokens, noise)[0]
-            fake_256, mu2, sigma2 = gen_2(desc_tokens, fake_64)
-            disc_real = disc_2(real_img_256, desc_tokens).view(-1)
-            lossD_real = criterion(disc_real, torch.ones_like(disc_real))
-            disc_fake = disc_1(fake_256, desc_tokens).view(-1)
-            lossD_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
-            lossD = lossD_real + lossD_fake
-            opt_disc_2.zero_grad()
-            lossD.backward(retain_graph=True)
-            opt_disc_2.step()
+            for desc_tokens in li_desc_tokens:
+                noise = torch.randn(batch_size, z_dim).to(device)
+                fake_64 = gen_1(desc_tokens, noise)[0]
+                fake_256, mu2, sigma2 = gen_2(desc_tokens, fake_64)
+                disc_real = disc_2(real_img_256, desc_tokens).view(-1)
+                lossD_real = criterion(disc_real, torch.ones_like(disc_real))
+                disc_fake = disc_1(fake_256, desc_tokens).view(-1)
+                lossD_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
+                lossD = lossD_real + lossD_fake
+                opt_disc_2.zero_grad()
+                lossD.backward(retain_graph=True)
+                opt_disc_2.step()
 
-            output = disc_2(fake_256, desc_tokens).view(-1)
-            lossG_fake = criterion(output, torch.ones_like(output))
-            kl_div = torch.sum(
-                1 + torch.log(sigma2.pow(2)) - mu2.pow(2) - sigma2.pow(2)
-            )
-            lossG = lossG_fake + kl_div
-            opt_gen_2.zero_grad()
-            lossG.backward()
-            opt_gen_2.step()
+                output = disc_2(fake_256, desc_tokens).view(-1)
+                lossG_fake = criterion(output, torch.ones_like(output))
+                kl_div = torch.sum(
+                    1 + torch.log(sigma2.pow(2)) - mu2.pow(2) - sigma2.pow(2)
+                )
+                lossG = lossG_fake + kl_div
+                opt_gen_2.zero_grad()
+                lossG.backward()
+                opt_gen_2.step()
 
-            print(
-                f"batch:{idx}, epoch:{epoch}, disc2Loss:{lossD.item()}, gen2Loss:{lossG.item()}"
-            )
+                print(
+                    f"batch:{idx}, epoch:{epoch}, disc2Loss:{lossD.item()}, gen2Loss:{lossG.item()}"
+                )
