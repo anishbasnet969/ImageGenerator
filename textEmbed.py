@@ -3,11 +3,11 @@ import torch.nn as nn
 
 
 class TextEmbeddingLSTM(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size, num_layers, tem_size):
+    def __init__(self, embedding_layer, embed_size, hidden_size, num_layers, tem_size):
         super(TextEmbeddingLSTM, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-        self.embed = nn.Embedding(vocab_size, embed_size)
+        self.embed = embedding_layer
         self.lstm = nn.LSTM(
             embed_size, hidden_size, num_layers, batch_first=True, bidirectional=True
         )

@@ -6,7 +6,7 @@ from custom_dataloader import *
 from discrminator_1 import StageIDiscriminator
 from con_augment import ConditioningAugmentation
 from generator_1 import StageIGenerator
-from preprocess_glove import VOCAB_SIZE
+from preprocess_glove import embedding_layer
 
 
 EMBEDDING_SIZE = 300
@@ -15,9 +15,9 @@ TEXT_EMBEDDING_NUM_LAYERS = 2
 TEM_SIZE = 400
 
 textEmbedder = TextEmbeddingLSTM(
+    embedding_layer,
     EMBEDDING_SIZE,
     TEXT_EMBEDDING_HIDDEN_SIZE,
-    VOCAB_SIZE,
     TEXT_EMBEDDING_NUM_LAYERS,
     TEM_SIZE,
 )

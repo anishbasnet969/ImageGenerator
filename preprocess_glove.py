@@ -18,7 +18,7 @@ pad_emb = torch.zeros(1, 300)
 
 glove.vectors = torch.cat((glove.vectors, unk_emb, pad_emb))
 
-VOCAB_SIZE = len(glove.vectors)
+embedding_layer = torch.nn.Embedding.from_pretrained(glove.vectors, freeze=True)
 
 
 def tokenizer_eng(text):
