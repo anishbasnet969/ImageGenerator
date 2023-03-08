@@ -2,3 +2,4 @@
 playground.ipynb
 /__pycache__/
 /.vector_cache/
+/runs/

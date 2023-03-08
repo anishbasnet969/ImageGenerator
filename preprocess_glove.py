@@ -13,6 +13,9 @@ glove = GloVe(name="6B", dim=300)
 glove.stoi["<UNK>"] = len(glove.vectors)
 glove.stoi["<PAD>"] = len(glove.vectors) + 1
 
+glove.itos.append("<UNK>")
+glove.itos.append("<PAD>")
+
 unk_emb = torch.mean(glove.vectors, dim=0).view(1, 300)
 pad_emb = torch.zeros(1, 300)
 
@@ -27,6 +30,7 @@ def tokenizer_eng(text):
 
 def text_transform(data):
     data = data[:5]
+    print(data.shape)
     tokenized_texts = [tokenizer_eng(text) for text in data]
 
     return [
@@ -42,7 +46,7 @@ def collate_fn(batch):
     pad_idx = glove.stoi["<PAD>"]
     list_of_texts = [item[1] for item in batch]
     list_of_texts = [
-        pad_sequence(texts, batch_first=True, padding_value=pad_idx)
+        pad_sequence(texts[0], batch_first=True, padding_value=pad_idx)
         for texts in list_of_texts
     ]
     imgs = [item[0].unsqueeze(0) for item in batch]

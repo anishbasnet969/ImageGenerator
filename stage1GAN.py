@@ -1,26 +1,10 @@
 import torch
 import torch.nn as nn
 
-from textEmbed import TextEmbeddingLSTM
-from custom_dataloader import *
+from generator_1 import StageIGenerator
 from discrminator_1 import StageIDiscriminator
 from con_augment import ConditioningAugmentation
-from generator_1 import StageIGenerator
-from preprocess_glove import embedding_layer
-
-
-EMBEDDING_SIZE = 300
-TEXT_EMBEDDING_HIDDEN_SIZE = 300
-TEXT_EMBEDDING_NUM_LAYERS = 2
-TEM_SIZE = 400
-
-textEmbedder = TextEmbeddingLSTM(
-    embedding_layer,
-    EMBEDDING_SIZE,
-    TEXT_EMBEDDING_HIDDEN_SIZE,
-    TEXT_EMBEDDING_NUM_LAYERS,
-    TEM_SIZE,
-)
+from utils import textEmbedder, TEM_SIZE
 
 
 class CAGenI(nn.Module):
@@ -31,7 +15,6 @@ class CAGenI(nn.Module):
 
     def forward(self, tem, noise):
         c_hat, mu, sigma = self.con_augment(tem)
-        print(c_hat.shape)
         lc = torch.cat((noise, c_hat), dim=1)
         img_output = self.gen(lc)
         return img_output, mu, sigma
