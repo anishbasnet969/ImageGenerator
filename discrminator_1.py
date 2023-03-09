@@ -34,7 +34,7 @@ class StageIDiscriminator(nn.Module):
                 padding,
                 bias=False,
             ),
-            nn.BatchNorm2d(out_channels),
+            nn.InstanceNorm2d(out_channels, affine=True),
             nn.LeakyReLU(0.1),
         )
 
@@ -49,8 +49,8 @@ class StageIDiscriminator(nn.Module):
         text_img_fm = self.channel_resize(concatenated_fm)
         flattened_vec = self.flatten(text_img_fm)
         score = self.classifier(flattened_vec)
-        output = torch.sigmoid(score)
-        return output
+        return score
+
 
 if __name__ == "__main__":
     discriminator = StageIDiscriminator(300, 128)

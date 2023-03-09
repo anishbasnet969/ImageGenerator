@@ -35,8 +35,7 @@ class StageIIDiscriminator(nn.Module):
         text_img_fm = self.channel_resize(concatenated_fm)
         flattened_vec = self.flatten(text_img_fm)
         score = self.classifier(flattened_vec)
-        output = torch.sigmoid(score)
-        return output
+        return score
 
     def downsampling_block(
         self, in_channels, out_channels, kernel_size, stride, padding
@@ -50,6 +49,6 @@ class StageIIDiscriminator(nn.Module):
                 padding,
                 bias=False,
             ),
-            nn.BatchNorm2d(out_channels),
+            nn.InstanceNorm2d(out_channels, affine=True),
             nn.LeakyReLU(0.1),
         )

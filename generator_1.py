@@ -19,6 +19,7 @@ class StageIGenerator(nn.Module):
             self.upsampling_block(64, 24, 4, 2, 1),
             self.upsampling_block(24, 12, 4, 2, 1),
             nn.Conv2d(12, 3, 1),
+            nn.Tanh(),
         )
 
     def upsampling_block(self, in_channels, out_channels, kernel_size, stride, padding):

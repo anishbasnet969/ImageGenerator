@@ -54,6 +54,7 @@ class StageIIGenerator(nn.Module):
             self.upsampling_block(256, 64, 4, 2, 1),
             self.upsampling_block(64, 24, 4, 2, 1),
             nn.Conv2d(24, 3, 1),
+            nn.Tanh(),
         )
 
     def forward(self, img_64, c_hat):
