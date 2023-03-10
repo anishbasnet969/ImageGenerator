@@ -45,6 +45,9 @@ def train_1(models, optimizers, loader, num_epochs, device=device):
     opt_disc_1, opt_gen_1, opt_text = optimizers
     step = 0  # Tensorboard Global Step
 
+    disc_1.train()
+    gen_1.train()
+
     for epoch in range(num_epochs):
         for batch_idx, (desc_tokens, real_img) in enumerate(loader):
             real_img = real_img.to(device)
@@ -111,7 +114,7 @@ def train_1(models, optimizers, loader, num_epochs, device=device):
                     img_grid_real = torchvision.utils.make_grid(
                         real_img, normalize=True
                     )
-                    img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)
+                    img_grid_fake = torchvision.utils.make_grid(fake[0], normalize=True)
 
                     writer_real.add_image("Real 64*64", img_grid_real, global_step=step)
                     writer_fake.add_image("Fake 64*64", img_grid_fake, global_step=step)
@@ -195,7 +198,7 @@ def train_2(models, optimizers, loader, num_epochs, device=device):
                     img_grid_real = torchvision.utils.make_grid(
                         real_img_256, normalize=True
                     )
-                    img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)
+                    img_grid_fake = torchvision.utils.make_grid(fake[0], normalize=True)
 
                     writer_real.add_image(
                         "Real 256*256", img_grid_real, global_step=step
