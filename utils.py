@@ -1,7 +1,5 @@
 import torch
-import torch.nn as nn
 import torchvision.transforms as transforms
-from textEmbed import TextEmbeddingLSTM
 from custom_dataloader import get_loader
 
 batch_size = 64
@@ -40,26 +38,13 @@ embedding_layer = torch.nn.Embedding.from_pretrained(
     dataset.vocab.glove.vectors, freeze=True
 )
 
-EMBEDDING_SIZE = 300
-TEXT_EMBEDDING_HIDDEN_SIZE = 300
-TEXT_EMBEDDING_NUM_LAYERS = 2
-TEM_SIZE = 400
 
-textEmbedder = TextEmbeddingLSTM(
-    embedding_layer,
-    EMBEDDING_SIZE,
-    TEXT_EMBEDDING_HIDDEN_SIZE,
-    TEXT_EMBEDDING_NUM_LAYERS,
-    TEM_SIZE,
-)
-
-
-def gradient_penalty(critic, real, fake, desc_tokens, device):
+def gradient_penalty(critic, real, fake, tem, device):
     BATCH_SIZE, C, H, W = real.shape
     epsilon = torch.rand((BATCH_SIZE, 1, 1, 1)).repeat(1, C, H, W).to(device)
     interpolated_images = real * epsilon + fake * (1 - epsilon)
 
-    mixed_scores = critic(interpolated_images, desc_tokens)
+    mixed_scores = critic(interpolated_images, tem)
 
     gradient = torch.autograd.grad(
         inputs=interpolated_images,

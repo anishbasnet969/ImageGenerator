@@ -3,12 +3,12 @@ import torch.nn as nn
 
 
 class StageIGenerator(nn.Module):
-    def __init__(self, con_a_size, latent_size):
+    def __init__(self, con_augment_size, latent_size):
         super(StageIGenerator, self).__init__()
 
         self.upsampling = nn.Sequential(
             self.upsampling_block(
-                con_a_size + latent_size,
+                con_augment_size + latent_size,
                 196,
                 4,
                 1,

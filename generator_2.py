@@ -40,7 +40,7 @@ class ResidualBlock(nn.Module):
 
 
 class StageIIGenerator(nn.Module):
-    def __init__(self, con_a_size) -> None:
+    def __init__(self, con_augment_size) -> None:
         super(StageIIGenerator, self).__init__()
         self.down_sampler = nn.Sequential(
             nn.Conv2d(3, 128, 4, 2, 1),
