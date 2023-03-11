@@ -46,16 +46,16 @@ con_augment_2 = ConditioningAugmentation(TEM_SIZE, 512, 256, 128).to(device)
 critic_2 = StageIIDiscriminator(TEM_SIZE, Nd).to(device)
 gen_2 = StageIIGenerator(c_dim).to(device)
 
-opt_text = optim.Adam(textEmbedder.parameters(), lr=lr, betas=(0.0, 0.9))
+opt_text = optim.Adam(textEmbedder.parameters(), lr=lr, betas=(0.9, 0.999))
 
-opt_con_augment_1 = optim.Adam(con_augment_1.parameters(), lr=lr, betas=(0.0, 0.9))
-opt_critic_1 = optim.Adam(critic_1.parameters(), lr=lr, betas=(0.0, 0.9))
-opt_gen_1 = optim.Adam(gen_1.parameters(), lr=lr, betas=(0.0, 0.9))
+opt_con_augment_1 = optim.Adam(con_augment_1.parameters(), lr=lr, betas=(0.9, 0.999))
+opt_critic_1 = optim.Adam(critic_1.parameters(), lr=lr, betas=(0.9, 0.999))
+opt_gen_1 = optim.Adam(gen_1.parameters(), lr=lr, betas=(0.9, 0.999))
 
 
-opt_con_augment_2 = optim.Adam(con_augment_2.parameters(), lr=lr, betas=(0.0, 0.9))
-opt_critic_2 = optim.Adam(critic_2.parameters(), lr=lr, betas=(0.0, 0.9))
-opt_gen_2 = optim.Adam(gen_2.parameters(), lr=lr, betas=(0.0, 0.9))
+opt_con_augment_2 = optim.Adam(con_augment_2.parameters(), lr=lr, betas=(0.9, 0.999))
+opt_critic_2 = optim.Adam(critic_2.parameters(), lr=lr, betas=(0.9, 0.999))
+opt_gen_2 = optim.Adam(gen_2.parameters(), lr=lr, betas=(0.9, 0.999))
 
 fixed_noise = torch.randn(batch_size, z_dim).to(device)
 writer = SummaryWriter("runs/ImageGen/COCO")
@@ -76,6 +76,7 @@ def train_1(models, optimizers, loader, num_epochs, device=device):
             real_img = real_img.to(device)
             desc_tokens = desc_tokens.to(device)
             current_batch_size = real_img.shape[0]
+            mismatched_desc_tokens = desc_tokens[torch.randperm(desc_tokens.shape[0])]
 
             for _ in range(n_critic):
                 tem = textEmbedder(desc_tokens)
@@ -85,12 +86,21 @@ def train_1(models, optimizers, loader, num_epochs, device=device):
                 fake = gen_1(lc_sum)
 
                 critic_1_real = critic_1(real_img, tem).view(-1)
+
+                tem_mismatched = textEmbedder(mismatched_desc_tokens)
+                critic_1_mismatched = critic_1(real_img, tem_mismatched).view(-1)
+
                 critic_1_fake = critic_1(fake, tem).view(-1)
+
+                critic_1_negative_samples = torch.cat(
+                    (critic_1_mismatched, critic_1_fake), dim=0
+                )
+
                 gp = gradient_penalty(critic_1, real_img, fake, tem, device)
 
                 loss_critic = -(
                     torch.mean(critic_1_real)
-                    - torch.mean(critic_1_fake)
+                    - torch.mean(critic_1_negative_samples)
                     + lambda_gp * gp
                 )
                 opt_critic_1.zero_grad()
@@ -152,6 +162,7 @@ def train_2(models, optimizers, loader, num_epochs, device=device):
             real_img_256 = real_img_256.to(device)
             desc_tokens = desc_tokens.to(device)
             current_batch_size = real_img_256.shape[0]
+            mismatched_desc_tokens = desc_tokens[torch.randperm(desc_tokens.shape[0])]
 
             for _ in range(n_critic):
                 tem = textEmbedder(desc_tokens)
@@ -164,12 +175,21 @@ def train_2(models, optimizers, loader, num_epochs, device=device):
                 fake_256 = gen_2(fake_64, c_hat2)
 
                 critic_2_real = critic_2(real_img_256, tem).view(-1)
+
+                tem_mismatched = textEmbedder(mismatched_desc_tokens)
+                critic_2_mismatched = critic_2(real_img_256, tem_mismatched).view(-1)
+
                 critic_2_fake = critic_2(fake_256, tem).view(-1)
+
+                critic_2_negative_samples = torch.cat(
+                    (critic_2_mismatched, critic_2_fake), dim=0
+                )
+
                 gp = gradient_penalty(critic_2, real_img_256, fake_256, tem, device)
 
                 loss_critic = -(
                     torch.mean(critic_2_real)
-                    - torch.mean(critic_2_fake)
+                    - torch.mean(critic_2_negative_samples)
                     + lambda_gp * gp
                 )
                 opt_critic_2.zero_grad()
