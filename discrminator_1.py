@@ -20,7 +20,7 @@ class StageIDiscriminator(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        self.classifier = nn.Linear(int((64 * 8 + Nd) / 2) * 4 * 4, 1)
+        self.fc = nn.Linear(int((64 * 8 + Nd) / 2) * 4 * 4, 1)
 
     def downsampling_block(
         self, in_channels, out_channels, kernel_size, stride, padding
@@ -48,7 +48,7 @@ class StageIDiscriminator(nn.Module):
         concatenated_fm = torch.cat((x, replicated_fm), dim=1)
         text_img_fm = self.channel_resize(concatenated_fm)
         flattened_vec = self.flatten(text_img_fm)
-        score = self.classifier(flattened_vec)
+        score = self.fc(flattened_vec)
         return score
 
 
