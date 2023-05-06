@@ -1,6 +1,6 @@
 import torch
 import torchvision.transforms as transforms
-from custom_dataloader import get_loader
+from data_loader import get_loader
 
 batch_size = 64
 
@@ -34,9 +34,9 @@ train_dl_2, _ = get_loader(
     batch_size=batch_size,
 )
 
-embedding_layer = torch.nn.Embedding.from_pretrained(
-    dataset.vocab.glove.vectors, freeze=True
-)
+# embedding_layer = torch.nn.Embedding.from_pretrained(
+#     dataset.vocab.glove.vectors, freeze=True
+# )
 
 
 def gradient_penalty(critic, real, fake, tem, device):

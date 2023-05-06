@@ -18,11 +18,11 @@ class StageIIDiscriminator(nn.Module):
         self.compress = nn.Linear(tem_size, Nd)
 
         # 1x1 conv for channel adjustment
-        self.channel_resize = nn.Conv2d(64 * 8 + Nd, int((64 * 8 + Nd) / 2), 1, 1, 0)
+        self.channel_resize = nn.Conv2d(64 * 8 + Nd, 160, 1, 1, 0)
 
         self.flatten = nn.Flatten()
 
-        self.classifier = nn.Linear(int((64 * 8 + Nd) / 2) * 4 * 4, 1)
+        self.critic_score = nn.Linear(160 * 4 * 4, 1)
 
     def forward(self, img, tem):
         x = self.down_sampler(x)
@@ -34,7 +34,7 @@ class StageIIDiscriminator(nn.Module):
         concatenated_fm = torch.cat((x, replicated_fm), dim=1)
         text_img_fm = self.channel_resize(concatenated_fm)
         flattened_vec = self.flatten(text_img_fm)
-        score = self.classifier(flattened_vec)
+        score = self.critic_score(flattened_vec)
         return score
 
     def downsampling_block(
@@ -49,6 +49,6 @@ class StageIIDiscriminator(nn.Module):
                 padding,
                 bias=False,
             ),
-            nn.InstanceNorm2d(out_channels, affine=True),
+            nn.BatchNorm2d(out_channels),
             nn.LeakyReLU(0.1),
         )

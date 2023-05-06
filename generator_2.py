@@ -40,20 +40,19 @@ class ResidualBlock(nn.Module):
 
 
 class StageIIGenerator(nn.Module):
-    def __init__(self, con_augment_size) -> None:
+    def __init__(self):
         super(StageIIGenerator, self).__init__()
         self.down_sampler = nn.Sequential(
             nn.Conv2d(3, 128, 4, 2, 1),
             nn.LeakyReLU(0.1),
             self.downsampling_block(128, 512, 4, 2, 1),
         )
-        self.residual_blocks = self._get_residual_blocks(640, 160)
+        self.residual_blocks = self._get_residual_blocks(640, 320)
         self.up_sampler = nn.Sequential(
-            self.upsampling_block(640, 512, 4, 2, 1),
-            self.upsampling_block(512, 256, 4, 2, 1),
-            self.upsampling_block(256, 64, 4, 2, 1),
-            self.upsampling_block(64, 24, 4, 2, 1),
-            nn.Conv2d(24, 3, 1),
+            self.upsampling_block(640, 320, 4, 2, 1),
+            self.upsampling_block(320, 160, 4, 2, 1),
+            self.upsampling_block(160, 80, 4, 2, 1),
+            nn.ConvTranspose2d(80, 3, 4, 2, 1),
             nn.Tanh(),
         )
 
@@ -99,7 +98,6 @@ class StageIIGenerator(nn.Module):
 
     def _get_residual_blocks(self, in_channels, intermediate_channels):
         return nn.Sequential(
-            ResidualBlock(in_channels, intermediate_channels),
             ResidualBlock(in_channels, intermediate_channels),
             ResidualBlock(in_channels, intermediate_channels),
             ResidualBlock(in_channels, intermediate_channels),

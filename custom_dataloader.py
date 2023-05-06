@@ -14,7 +14,6 @@ spacy_eng = spacy.load("en_core_web_lg")
 
 class Vocabulary:
     def __init__(self):
-
         # self.itos = {0: "<PAD>", 1: "<UNK>"}
         # self.stoi = {"<PAD>": 0, "<UNK>": 1}
         # self.freq_threshold = freq_threshold

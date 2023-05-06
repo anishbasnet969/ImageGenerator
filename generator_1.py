@@ -3,22 +3,21 @@ import torch.nn as nn
 
 
 class StageIGenerator(nn.Module):
-    def __init__(self, con_augment_size, latent_size):
+    def __init__(self, c_dim, z_dim):
         super(StageIGenerator, self).__init__()
 
         self.upsampling = nn.Sequential(
             self.upsampling_block(
-                con_augment_size + latent_size,
-                196,
+                c_dim + z_dim,
+                192,
                 4,
                 1,
                 0,
             ),
-            self.upsampling_block(196, 128, 4, 2, 1),
-            self.upsampling_block(128, 64, 4, 2, 1),
-            self.upsampling_block(64, 24, 4, 2, 1),
-            self.upsampling_block(24, 12, 4, 2, 1),
-            nn.Conv2d(12, 3, 1),
+            self.upsampling_block(192, 96, 4, 2, 1),
+            self.upsampling_block(96, 48, 4, 2, 1),
+            self.upsampling_block(48, 24, 4, 2, 1),
+            nn.ConvTranspose2d(24, 3, 4, 2, 1),
             nn.Tanh(),
         )
 
@@ -39,8 +38,3 @@ class StageIGenerator(nn.Module):
     def forward(self, x):
         x = x.reshape(x.shape[0], x.shape[1], 1, 1)
         return self.upsampling(x)
-
-
-if __name__ == "__main__":
-    generator = StageIGenerator(128, 100)
-    print(generator(torch.randn(8, 228)).shape)
