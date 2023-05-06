@@ -13,19 +13,14 @@ class TextEmbeddingLSTM(nn.Module):
         )
         self.tem = nn.Linear(hidden_size * 2, tem_size)
 
-    def forward(self, texts):
-        embeddings = self.embed(texts)
+    def forward(self, desc_tokens):
+        embeddings = self.embed(desc_tokens)
 
-        h0 = torch.zeros(self.num_layers * 2, texts.size(0), self.hidden_size)
-        c0 = torch.zeros(self.num_layers * 2, texts.size(0), self.hidden_size)
+        h0 = torch.zeros(self.num_layers * 2, desc_tokens.size(0), self.hidden_size)
+        c0 = torch.zeros(self.num_layers * 2, desc_tokens.size(0), self.hidden_size)
 
         outputs, _ = self.lstm(embeddings, (h0, c0))
 
         h_sum = torch.sum(outputs, dim=1)
         text_embedding = self.tem(h_sum)
         return text_embedding
-
-
-if __name__ == "__main__":
-    textEmbedding = TextEmbeddingLSTM(300, 128, 100000, 2, 300)
-    print(textEmbedding(torch.tensor([[1, 2, 3, 4, 5]])).shape)
