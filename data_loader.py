@@ -84,14 +84,16 @@ def get_loader(root, ann_file, transform, batch_size=64, shuffle=True):
     )
 
     sampler = DistributedSampler(
-        dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal()
+        dataset,
+        num_replicas=xm.xrt_world_size(),
+        rank=xm.get_ordinal(),
+        shuffle=shuffle,
     )
 
     loader = DataLoader(
         dataset=dataset,
         batch_size=batch_size,
         sampler=sampler,
-        shuffle=shuffle,
         collate_fn=Collate(),
     )
 

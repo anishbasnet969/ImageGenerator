@@ -12,10 +12,10 @@ from discriminator_2 import StageIIDiscriminator
 from utils import train_loader_1, train_loader_2
 from stage_1_train_fn import train_1, train_2
 
-import torch.nn.parallel as dp
 import torch_xla.core.xla_model as xm
-import torch_xla.distributed.xla_multiprocessing as xmp
+import torch_xla.distributed.data_parallel as dp
 import torch_xla.distributed.parallel_loader as pl
+import torch_xla.distributed.xla_multiprocessing as xmp
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -37,26 +37,14 @@ con_augment_2 = ConditioningAugmentation(TEM_SIZE, 320, c_dim).to(device)
 critic_2 = StageIIDiscriminator(TEM_SIZE, Nd).to(device)
 gen_2 = StageIIGenerator(c_dim).to(device)
 
-textEncoder = dp.DistributedDataParallel(
-    textEncoder, device_ids=[device], output_device=device
-)
-projection_head = dp.DistributedDataParallel(
-    projection_head, device_ids=[device], output_device=device
-)
-con_augment_1 = dp.DistributedDataParallel(
-    con_augment_1, device_ids=[device], output_device=device
-)
-critic_1 = dp.DistributedDataParallel(
-    critic_1, device_ids=[device], output_device=device
-)
-gen_1 = dp.DistributedDataParallel(gen_1, device_ids=[device], output_device=device)
-con_augment_2 = dp.DistributedDataParallel(
-    con_augment_2, device_ids=[device], output_device=device
-)
-critic_2 = dp.DistributedDataParallel(
-    critic_2, device_ids=[device], output_device=device
-)
-gen_2 = dp.DistributedDataParallel(gen_2, device_ids=[device], output_device=device)
+textEncoder = dp.DataParallel(textEncoder)
+projection_head = dp.DataParallel(projection_head)
+con_augment_1 = dp.DataParallel(con_augment_1)
+critic_1 = dp.DataParallel(critic_1)
+gen_1 = dp.DataParallel(gen_1)
+con_augment_2 = dp.DataParallel(con_augment_2)
+critic_2 = dp.DataParallel(critic_2)
+gen_2 = dp.DataParallel(gen_2)
 
 
 # opt_text = optim.Adam(textEmbedder.parameters(), lr=lr, betas=(0.9, 0.999))
