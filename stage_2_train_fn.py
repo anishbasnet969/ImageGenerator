@@ -3,6 +3,8 @@ import random
 import torch
 import torchvision
 
+import torch_xla.core.xla_model as xm
+
 from torch.utils.tensorboard import SummaryWriter
 
 from utils import gradient_penalty
@@ -127,7 +129,7 @@ def train_2(
                 )
                 opt_critic_2.zero_grad()
                 loss_critic.backward(retain_graph=True)
-                opt_critic_2.step()
+                xm.optimizer_step(opt_critic_2)
 
             output = critic_2(fake_256, tem).view(-1)
             lossG_fake = -torch.mean(output)
@@ -136,15 +138,16 @@ def train_2(
             )
             lossG = lossG_fake + kl_div
             lossG.backward()
-            opt_gen_2.step()
+            xm.optimizer_step(opt_gen_2)
             opt_gen_2.zero_grad()
 
-            opt_con_augment_2.step()
+            xm.optimizer_step(opt_con_augment_2)
             opt_con_augment_2.zero_grad()
 
-            lr_scheduler_critic_2.step()
-            lr_scheduler_gen_2.step()
-            lr_scheduler_con_augment_2.step()
+            if xm.is_master_ordinal():
+                lr_scheduler_critic_2.step()
+                lr_scheduler_gen_2.step()
+                lr_scheduler_con_augment_2.step()
 
             if batch_idx % 100 == 0 and batch_idx > 0:
                 print(
@@ -196,4 +199,5 @@ def train_2(
                 "lr_scheduler_gen_2": lr_scheduler_gen_2.state_dict(),
                 "epoch": epoch,
             }
-            torch.save(checkpoint, checkpoint_path)
+            if xm.is_master_ordinal():
+                torch.save(checkpoint, checkpoint_path)

@@ -4,6 +4,8 @@ import json
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader, Dataset
+from torch.utils.data.distributed import DistributedSampler
+import torch_xla.core.xla_model as xm
 from transformers import AutoTokenizer
 import torchvision.transforms as transforms
 
@@ -81,6 +83,16 @@ def get_loader(root, ann_file, transform, batch_size=64, shuffle=True):
         transform=transform,
     )
 
-    loader = DataLoader(dataset=dataset, batch_size=batch_size, collate_fn=Collate())
+    sampler = DistributedSampler(
+        dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal()
+    )
 
-    return loader, dataset
+    loader = DataLoader(
+        dataset=dataset,
+        batch_size=batch_size,
+        sampler=sampler,
+        shuffle=shuffle,
+        collate_fn=Collate(),
+    )
+
+    return loader
