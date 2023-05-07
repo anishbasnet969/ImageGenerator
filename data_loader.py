@@ -76,8 +76,8 @@ class Collate:
 
 def get_loader(root, ann_file, transform, batch_size=64, shuffle=True):
     dataset = TexttoImgCOCO(
-        root="data/train2017",
-        ann_file="data/annotations/captions_train2017.json",
+        root=root,
+        ann_file=ann_file,
         transform=transform,
     )
 

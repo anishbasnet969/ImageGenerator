@@ -1,0 +1,203 @@
+import os
+import random
+import torch
+import torchvision
+
+from torch.utils.tensorboard import SummaryWriter
+
+from utils import gradient_penalty
+
+
+n_critic = 5
+lambda_gp = 10
+z_dim = 100
+
+writer_1 = SummaryWriter("runs/ImageGen/Stage1")
+writer_real_1 = SummaryWriter(f"runs/ImageGen/real_1")
+writer_fake_1 = SummaryWriter(f"runs/ImageGen/fake_1")
+
+
+def train_1(
+    models,
+    optimizers,
+    schedulers,
+    loader,
+    num_epochs,
+    device,
+    start_epoch=0,
+    save_dir="./checkpoints/Stage1",
+):
+    textEncoder, projection_head, con_augment_1, critic_1, gen_1 = models
+
+    (
+        opt_encoder,
+        opt_projection_head,
+        opt_con_augment_1,
+        opt_critic_1,
+        opt_gen_1,
+    ) = optimizers
+
+    (
+        lr_scheduler_encoder,
+        lr_scheduler_projection_head,
+        lr_scheduler_con_augment_1,
+        lr_scheduler_critic_1,
+        lr_scheduler_gen_1,
+    ) = schedulers
+
+    checkpoint_path = os.path.join(save_dir, "checkpoint_stage1.pth")
+    if os.path.exists(checkpoint_path):
+        checkpoint = torch.load(checkpoint_path)
+        start_epoch = checkpoint["epoch"] + 1
+        textEncoder.load_state_dict(checkpoint["textEncoder"])
+        projection_head.load_state_dict(checkpoint["projection_head"])
+        con_augment_1.load_state_dict(checkpoint["con_augment_1"])
+        critic_1.load_state_dict(checkpoint["critic_1"])
+        gen_1.load_state_dict(checkpoint["gen_1"])
+        opt_encoder.load_state_dict(checkpoint["opt_encoder"])
+        opt_projection_head.load_state_dict(checkpoint["opt_projection_head"])
+        opt_con_augment_1.load_state_dict(checkpoint["opt_con_augment_1"])
+        opt_critic_1.load_state_dict(checkpoint["opt_critic_1"])
+        opt_gen_1.load_state_dict(checkpoint["opt_gen_1"])
+        lr_scheduler_encoder.load_state_dict(checkpoint["lr_scheduler_encoder"])
+        lr_scheduler_projection_head.load_state_dict(
+            checkpoint["lr_scheduler_projection_head"]
+        )
+        lr_scheduler_con_augment_1.load_state_dict(
+            checkpoint["lr_scheduler_con_augment_1"]
+        )
+        lr_scheduler_critic_1.load_state_dict(checkpoint["lr_scheduler_critic_1"])
+        lr_scheduler_gen_1.load_state_dict(checkpoint["lr_scheduler_gen_1"])
+        print(f"Loaded checkpoint at epoch {start_epoch-1}")
+
+    step = 0  # Tensorboard Global Step
+
+    textEncoder.train()
+    projection_head.train()
+    con_augment_1.train()
+    critic_1.train()
+    gen_1.train()
+
+    for epoch in range(start_epoch, num_epochs):
+        for batch_idx, (tokenized_texts, real_img_64) in enumerate(loader):
+            real_img_64 = real_img_64.to(device)
+            tokenized_texts = {k: v.to(device) for k, v in tokenized_texts.items()}
+            current_batch_size = real_img_64.shape[0]
+            torch.manual_seed(random.randint(0, 1000))
+            mismatched_tokenized_texts = {
+                k: v[torch.randperm(current_batch_size)].to(device)
+                for k, v in tokenized_texts.items()
+            }
+            for _ in range(n_critic):
+                encoder_outputs = textEncoder(**tokenized_texts)
+                cls_hidden_state = encoder_outputs.last_hidden_state[:, 0, :]
+                tem = projection_head(cls_hidden_state)
+                c_hat1, mu1, sigma1 = con_augment_1(tem)
+                torch.manual_seed(random.randint(0, 1000))
+                noise = torch.randn(current_batch_size, z_dim).to(device)
+                C_g = torch.cat((c_hat1, noise), dim=1)
+                fake_64 = gen_1(C_g)
+
+                critic_1_real = critic_1(real_img_64, tem).view(-1)
+
+                mismatched_encoder_outputs = textEncoder(**mismatched_tokenized_texts)
+                cls_hidden_state = mismatched_encoder_outputs.last_hidden_state[:, 0, :]
+                tem_mismatched = projection_head(cls_hidden_state)
+                critic_1_mismatched = critic_1(real_img_64, tem_mismatched).view(-1)
+
+                critic_1_fake = critic_1(fake_64, tem).view(-1)
+
+                critic_1_negative_samples = torch.cat(
+                    (critic_1_mismatched, critic_1_fake), dim=0
+                )
+
+                gp = gradient_penalty(critic_1, real_img_64, fake_64, tem, device)
+
+                loss_critic = (
+                    torch.mean(critic_1_negative_samples)
+                    - torch.mean(critic_1_real)
+                    + lambda_gp * gp
+                )
+                opt_critic_1.zero_grad()
+                loss_critic.backward(retain_graph=True)
+                opt_critic_1.step()
+
+            output = critic_1(fake_64, tem).view(-1)
+            lossG_fake = -torch.mean(output)
+            kl_div = torch.sum(
+                1 + torch.log(sigma1.pow(2)) - mu1.pow(2) - sigma1.pow(2)
+            )
+            lossG = lossG_fake + kl_div
+
+            lossG.backward()
+            opt_gen_1.step()
+            opt_gen_1.zero_grad()
+
+            opt_encoder.step()
+            opt_encoder.zero_grad()
+            opt_projection_head.step()
+            opt_projection_head.zero_grad()
+
+            opt_con_augment_1.step()
+            opt_con_augment_1.zero_grad()
+
+            lr_scheduler_critic_1.step()
+            lr_scheduler_gen_1.step()
+            lr_scheduler_encoder.step()
+            lr_scheduler_projection_head.step()
+            lr_scheduler_con_augment_1.step()
+
+            if batch_idx > 0:
+                print(
+                    f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
+                    Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
+                )
+
+                with torch.no_grad():
+                    encoder_outputs = textEncoder(**tokenized_texts)
+                    cls_hidden_state = encoder_outputs.last_hidden_state[:, 0, :]
+                    tem = projection_head(cls_hidden_state)
+                    c_hat1, mu1, sigma1 = con_augment_1(tem)
+                    torch.manual_seed(456)
+                    fixed_noise = torch.randn(current_batch_size, z_dim).to(device)
+                    C_g = torch.cat((c_hat1, fixed_noise), dim=1)
+                    fake_64 = gen_1(C_g)
+                    img_grid_real = torchvision.utils.make_grid(
+                        real_img_64, normalize=True
+                    )
+                    img_grid_fake = torchvision.utils.make_grid(
+                        fake_64[0], normalize=True
+                    )
+
+                    writer_real_1.add_image(
+                        "Real 64*64", img_grid_real, global_step=step
+                    )
+                    writer_fake_1.add_image(
+                        "Fake 64*64", img_grid_fake, global_step=step
+                    )
+
+                writer_1.add_scalar("Critic 1 loss", loss_critic, global_step=step)
+                writer_1.add_scalar("Generator 1 loss", lossG, global_step=step)
+
+                step += 1
+
+        if epoch % 10 == 0:
+            checkpoint = {
+                "textEncoder": textEncoder.state_dict(),
+                "projection_head": projection_head.state_dict(),
+                "con_augment_1": con_augment_1.state_dict(),
+                "critic_1": critic_1.state_dict(),
+                "gen_1": gen_1.state_dict(),
+                "opt_encoder": opt_encoder.state_dict(),
+                "opt_projection_head": opt_projection_head.state_dict(),
+                "opt_con_augment_1": opt_con_augment_1.state_dict(),
+                "opt_critic_1": opt_critic_1.state_dict(),
+                "opt_gen_1": opt_gen_1.state_dict(),
+                "lr_scheduler_encoder": lr_scheduler_encoder.state_dict(),
+                "lr_scheduler_projection_head": lr_scheduler_projection_head.state_dict(),
+                "lr_scheduler_con_augment_1": lr_scheduler_con_augment_1.state_dict(),
+                "lr_scheduler_critic_1": lr_scheduler_critic_1.state_dict(),
+                "lr_scheduler_gen_1": lr_scheduler_gen_1.state_dict(),
+                "epoch": epoch,
+            }
+            torch.save(checkpoint, checkpoint_path)
