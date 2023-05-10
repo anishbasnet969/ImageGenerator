@@ -13,7 +13,6 @@ from utils import train_loader_1, train_loader_2
 from stage_1_train_fn import train_1, train_2
 
 import torch_xla.core.xla_model as xm
-import torch_xla.distributed.data_parallel as dp
 import torch_xla.distributed.parallel_loader as pl
 import torch_xla.distributed.xla_multiprocessing as xmp
 
@@ -22,29 +21,38 @@ torch.autograd.set_detect_anomaly(True)
 device = xm.xla_device()
 
 TEM_SIZE = 512
-lr = 2e-4
+lr = 1e-3
 c_dim = 128
 z_dim = 100
 Nd = 128
-num_epochs = 300
+num_epochs = 500
 
-textEncoder = AutoModel.from_pretrained("SpanBERT/spanbert-base-cased").to(device)
-projection_head = nn.Linear(768, TEM_SIZE).to(device)
-con_augment_1 = ConditioningAugmentation(TEM_SIZE, 256, c_dim).to(device)
-critic_1 = StageIDiscriminator(TEM_SIZE, Nd).to(device)
-gen_1 = StageIGenerator(c_dim, z_dim).to(device)
-con_augment_2 = ConditioningAugmentation(TEM_SIZE, 320, c_dim).to(device)
-critic_2 = StageIIDiscriminator(TEM_SIZE, Nd).to(device)
-gen_2 = StageIIGenerator(c_dim).to(device)
+textEncoder = AutoModel.from_pretrained("SpanBERT/spanbert-base-cased")
+projection_head = nn.Linear(768, TEM_SIZE)
+con_augment_1 = ConditioningAugmentation(TEM_SIZE, 256, c_dim)
+critic_1 = StageIDiscriminator(TEM_SIZE, Nd)
+gen_1 = StageIGenerator(c_dim, z_dim)
+con_augment_2 = ConditioningAugmentation(TEM_SIZE, 320, c_dim)
+critic_2 = StageIIDiscriminator(TEM_SIZE, Nd)
+gen_2 = StageIIGenerator(c_dim)
 
-textEncoder = dp.DataParallel(textEncoder)
-projection_head = dp.DataParallel(projection_head)
-con_augment_1 = dp.DataParallel(con_augment_1)
-critic_1 = dp.DataParallel(critic_1)
-gen_1 = dp.DataParallel(gen_1)
-con_augment_2 = dp.DataParallel(con_augment_2)
-critic_2 = dp.DataParallel(critic_2)
-gen_2 = dp.DataParallel(gen_2)
+textEncoder = xmp.MpModelWrapper(textEncoder)
+projection_head = xmp.MpModelWrapper(projection_head)
+con_augment_1 = xmp.MpModelWrapper(con_augment_1)
+critic_1 = xmp.MpModelWrapper(critic_1)
+gen_1 = xmp.MpModelWrapper(gen_1)
+con_augment_2 = xmp.MpModelWrapper(con_augment_2)
+critic_2 = xmp.MpModelWrapper(critic_2)
+gen_2 = xmp.MpModelWrapper(gen_2)
+
+textEncoder = textEncoder.to(device)
+projection_head = projection_head.to(device)
+con_augment_1 = con_augment_1.to(device)
+critic_1 = critic_1.to(device)
+gen_1 = gen_1.to(device)
+con_augment_2 = con_augment_2.to(device)
+critic_2 = critic_2.to(device)
+gen_2 = gen_2.to(device)
 
 
 # opt_text = optim.Adam(textEmbedder.parameters(), lr=lr, betas=(0.9, 0.999))
@@ -101,10 +109,4 @@ def train_1_xmp(rank):
 
 
 if __name__ == "main":
-    xmp.spawn(
-        train_1_xmp,
-        args=(),
-        nprocs=xm.xrt_world_size(),
-        start_method="fork",
-        daemon=True,
-    )
+    xmp.spawn(train_1_xmp, args=(), nprocs=xm.xrt_world_size(), start_method="fork")

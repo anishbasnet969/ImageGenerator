@@ -54,13 +54,13 @@ def train_2(
     for param in gen_1.parameters():
         param.requires_grad = False
 
-    stage1_checkpoint = torch.load("./checkpoint/Stage1/checkpoint_stage1.pth")
+    stage1_checkpoint = torch.load("./checkpoint/Stage1/latest_checkpoint_stage1.pth")
     textEncoder.load_state_dict(stage1_checkpoint["textEncoder"])
     projection_head.load_state_dict(stage1_checkpoint["projection_head"])
     con_augment_1.load_state_dict(stage1_checkpoint["con_augment_1"])
     gen_1.load_state_dict(stage1_checkpoint["gen_1"])
 
-    checkpoint_path = os.path.join(save_dir, "checkpoint_stage2.pth")
+    checkpoint_path = os.path.join(save_dir, "latest_checkpoint_stage2.pth")
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)
         start_epoch = checkpoint["epoch"] + 1
@@ -150,7 +150,7 @@ def train_2(
                 lr_scheduler_con_augment_2.step()
 
             if batch_idx % 1000 == 0 and batch_idx > 0:
-                print(
+                xm.master_print(
                     f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
                     Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
                 )
@@ -186,7 +186,7 @@ def train_2(
                 writer_2.add_scalar("Generator 2 loss", lossG, global_step=step)
                 step += 1
 
-        if epoch % 10 == 0:
+        if xm.is_master_ordinal() and epoch % 10 == 0:
             checkpoint = {
                 "con_augment_2": con_augment_2.state_dict(),
                 "critic_2": critic_2.state_dict(),
@@ -199,5 +199,6 @@ def train_2(
                 "lr_scheduler_gen_2": lr_scheduler_gen_2.state_dict(),
                 "epoch": epoch,
             }
-            if xm.is_master_ordinal():
-                torch.save(checkpoint, checkpoint_path)
+            checkpoint_epoch_path = f"{save_dir}/epochs/checkpoint_epoch_{epoch}.pth"
+            torch.save(checkpoint, checkpoint_epoch_path)
+            torch.save(checkpoint, checkpoint_path)

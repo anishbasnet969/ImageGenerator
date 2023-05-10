@@ -47,7 +47,7 @@ def train_1(
         lr_scheduler_gen_1,
     ) = schedulers
 
-    checkpoint_path = os.path.join(save_dir, "checkpoint_stage1.pth")
+    checkpoint_path = os.path.join(save_dir, "latest_checkpoint_stage1.pth")
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)
         start_epoch = checkpoint["epoch"] + 1
@@ -152,7 +152,7 @@ def train_1(
                 lr_scheduler_con_augment_1.step()
 
             if batch_idx % 1000 == 0 and batch_idx > 0:
-                print(
+                xm.master_print(
                     f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
                     Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
                 )
@@ -185,7 +185,7 @@ def train_1(
 
                 step += 1
 
-        if epoch % 10 == 0:
+        if xm.is_master_ordinal() and epoch % 10 == 0:
             checkpoint = {
                 "textEncoder": textEncoder.state_dict(),
                 "projection_head": projection_head.state_dict(),
@@ -204,5 +204,6 @@ def train_1(
                 "lr_scheduler_gen_1": lr_scheduler_gen_1.state_dict(),
                 "epoch": epoch,
             }
-            if xm.is_master_ordinal():
-                torch.save(checkpoint, checkpoint_path)
+            checkpoint_epoch_path = f"{save_dir}/epochs/checkpoint_epoch_{epoch}.pth"
+            torch.save(checkpoint, checkpoint_epoch_path)
+            torch.save(checkpoint, checkpoint_path)

@@ -2,7 +2,7 @@ import torch
 import torchvision.transforms as transforms
 from data_loader import get_loader
 
-batch_size = 64
+batch_size = 2048
 
 my_transform_1 = transforms.Compose(
     [
@@ -21,16 +21,16 @@ my_transform_2 = transforms.Compose(
 )
 
 train_loader_1 = get_loader(
-    root="data/train2017",
-    ann_file="data/annotations/captions_train2017.json",
+    root="dataset/train2017",
+    ann_file="dataset/annotations/captions_train2017.json",
     transform=my_transform_1,
     batch_size=batch_size,
     shuffle=True,
 )
 
 train_loader_2 = get_loader(
-    root="data/train2017",
-    ann_file="data/annotations/captions_train2017.json",
+    root="dataset/train2017",
+    ann_file="dataset/annotations/captions_train2017.json",
     transform=my_transform_2,
     batch_size=batch_size,
     shuffle=True,
