@@ -21,16 +21,16 @@ my_transform_2 = transforms.Compose(
 )
 
 train_loader_1 = get_loader(
-    root="dataset/train2017",
-    ann_file="dataset/annotations/captions_train2017.json",
+    root="./dataset/train2017",
+    ann_file="./dataset/annotations/captions_train2017.json",
     transform=my_transform_1,
     batch_size=batch_size,
     shuffle=True,
 )
 
 train_loader_2 = get_loader(
-    root="dataset/train2017",
-    ann_file="dataset/annotations/captions_train2017.json",
+    root="./dataset/train2017",
+    ann_file="./dataset/annotations/captions_train2017.json",
     transform=my_transform_2,
     batch_size=batch_size,
     shuffle=True,
