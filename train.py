@@ -131,5 +131,5 @@ def train_1_xmp(rank):
 #     )
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     xmp.spawn(train_1_xmp, args=(), nprocs=32, start_method="fork")
