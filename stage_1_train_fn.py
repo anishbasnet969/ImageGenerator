@@ -131,8 +131,7 @@ def train_1(
                 )
                 opt_critic_1.zero_grad()
                 loss_critic.backward(retain_graph=True)
-                opt_critic_1.step()
-                xm.optimizer_step(opt_critic_1)
+                xm.optimizer_step(opt_critic_1, barrier=True)
 
             output = critic_1(fake_64, tem).view(-1)
             lossG_fake = -torch.mean(output)
@@ -142,15 +141,15 @@ def train_1(
             lossG = lossG_fake + kl_div
 
             lossG.backward()
-            xm.optimizer_step(opt_gen_1)
+            xm.optimizer_step(opt_gen_1, barrier=True)
             opt_gen_1.zero_grad()
 
-            xm.optimizer_step(opt_encoder)
+            xm.optimizer_step(opt_encoder, barrier=True)
             opt_encoder.zero_grad()
-            xm.optimizer_step(opt_projection_head)
+            xm.optimizer_step(opt_projection_head, barrier=True)
             opt_projection_head.zero_grad()
 
-            xm.optimizer_step(opt_con_augment_1)
+            xm.optimizer_step(opt_con_augment_1, barrier=True)
             opt_con_augment_1.zero_grad()
 
             if xm.is_master_ordinal():
