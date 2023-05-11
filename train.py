@@ -11,7 +11,8 @@ from discrminator_1 import StageIDiscriminator
 from generator_2 import StageIIGenerator
 from discriminator_2 import StageIIDiscriminator
 from data_loader import get_loader
-from stage_1_train_fn import train_1, train_2
+from stage_1_train_fn import train_1
+from stage_2_train_fn import train_2
 
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
