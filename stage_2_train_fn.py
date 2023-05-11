@@ -161,7 +161,7 @@ def train_2(
                 lr_scheduler_gen_2.step()
                 lr_scheduler_con_augment_2.step()
 
-            if batch_idx % 100 == 0 and batch_idx > 0:
+            if xm.is_master_ordinal() and batch_idx % 100 == 0 and batch_idx > 0:
                 xm.master_print(
                     f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
                     Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
