@@ -24,7 +24,7 @@ def train_1(
     num_epochs,
     device,
     start_epoch=0,
-    bucket_name="data-and=checkpoints-bucket",
+    bucket_name="data-and-checkpoints-bucket",
     save_dir="./checkpoints/Stage1",
 ):
     storage_client = storage.Client()
