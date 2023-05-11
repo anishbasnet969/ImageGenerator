@@ -52,7 +52,7 @@ critic_1 = StageIDiscriminator(TEM_SIZE, Nd)
 gen_1 = StageIGenerator(c_dim, z_dim)
 con_augment_2 = ConditioningAugmentation(TEM_SIZE, 320, c_dim)
 critic_2 = StageIIDiscriminator(TEM_SIZE, Nd)
-gen_2 = StageIIGenerator(c_dim)
+gen_2 = StageIIGenerator()
 
 textEncoder = xmp.MpModelWrapper(textEncoder).to(device)
 projection_head = xmp.MpModelWrapper(projection_head).to(device)

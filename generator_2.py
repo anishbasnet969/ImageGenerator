@@ -101,4 +101,5 @@ class StageIIGenerator(nn.Module):
             ResidualBlock(in_channels, intermediate_channels),
             ResidualBlock(in_channels, intermediate_channels),
             ResidualBlock(in_channels, intermediate_channels),
+            ResidualBlock(in_channels, intermediate_channels),
         )
