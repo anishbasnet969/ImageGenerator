@@ -90,8 +90,9 @@ lr_scheduler_gen_2 = StepLR(opt_gen_2, step_size=100, gamma=0.5)
 
 def train_1_xmp(rank):
     train_loader_1 = get_loader(
-        root="./dataset/train2017",
-        ann_file="./dataset/annotations/captions_train2017.json",
+        bucket_name="data-and-checkpoints-bucket",
+        root="dataset/train2017",
+        ann_file="dataset/annotations/captions_train2017.json",
         transform=my_transform_1,
         batch_size=batch_size,
         shuffle=True,
@@ -121,8 +122,8 @@ def train_1_xmp(rank):
 
 # def train2_xmp(rank):
 #     train_loader_2 = get_loader(
-#         root="./dataset/train2017",
-#         ann_file="./dataset/annotations/captions_train2017.json",
+#         root="dataset/train2017",
+#         ann_file="dataset/annotations/captions_train2017.json",
 #         transform=my_transform_2,
 #         batch_size=batch_size,
 #         shuffle=True,

@@ -2,6 +2,9 @@ import os
 import pandas as pd
 import json
 from PIL import Image
+from google.cloud import storage
+import io
+
 import torch
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
@@ -12,7 +15,9 @@ import torchvision.transforms as transforms
 
 
 class TexttoImgCOCO(Dataset):
-    def __init__(self, root, ann_file, transform=None):
+    def __init__(self, bucket_name, root, ann_file, transform=None):
+        self.client = storage.Client()
+        self.bucket = self.client.get_bucket(bucket_name)
         self.img_dir = root
         self.df = self.get_text_img_df(ann_file)
         self.transform = transform
@@ -28,7 +33,11 @@ class TexttoImgCOCO(Dataset):
     def __getitem__(self, index):
         text = self.texts[index]
         img_f = self.imgs[index]
-        img = Image.open(os.path.join(self.img_dir, img_f)).convert("RGB")
+
+        blob = self.bucket.blob(os.path.join(self.img_dir, img_f))
+        img_data = blob.download_as_bytes()
+
+        img = Image.open(io.BytesIO(img_data)).convert("RGB")
 
         if self.transform is not None:
             img = self.transform(img)
@@ -36,10 +45,11 @@ class TexttoImgCOCO(Dataset):
         return text, img
 
     def get_text_img_df(self, ann_file):
-        with open(ann_file, "r") as f:
-            anns = json.load(f)
-            imgs = anns["images"]
-            texts = anns["annotations"]
+        blob = self.bucket.blob(ann_file)
+        anns = json.loads(blob.download_as_text())
+
+        imgs = anns["images"]
+        texts = anns["annotations"]
 
         img_df = pd.DataFrame(imgs)[["id", "file_name"]]
         img_df.rename(columns={"id": "image_id"}, inplace=True)
@@ -68,8 +78,9 @@ class Collate:
         return tokenized_texts, imgs
 
 
-def get_loader(root, ann_file, transform, batch_size=64, shuffle=True):
+def get_loader(bucket_name, root, ann_file, transform, batch_size=64, shuffle=True):
     dataset = TexttoImgCOCO(
+        bucket_name=bucket_name,
         root=root,
         ann_file=ann_file,
         transform=transform,

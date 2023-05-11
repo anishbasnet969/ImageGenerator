@@ -5,18 +5,16 @@ import torchvision
 
 import torch_xla.core.xla_model as xm
 
-from torch.utils.tensorboard import SummaryWriter
+from google.cloud import storage
+import tempfile
 
+from torch.utils.tensorboard import SummaryWriter
 from utils import gradient_penalty
 
 
 n_critic = 5
 lambda_gp = 10
 z_dim = 100
-
-writer_2 = SummaryWriter("runs/ImageGen/Stage2")
-writer_real_2 = SummaryWriter(f"runs/ImageGen/real_2")
-writer_fake_2 = SummaryWriter(f"runs/ImageGen/fake_2")
 
 
 def train_2(
@@ -26,9 +24,17 @@ def train_2(
     loader,
     num_epochs,
     device,
+    bucket_name="data-and-checkpoints-bucket",
     start_epoch=0,
     save_dir="./checkpoints/Stage2",
 ):
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+
+    writer_2 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/Stage2")
+    writer_real_2 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/real_2")
+    writer_fake_2 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/fake_2")
+
     (
         textEncoder,
         projection_head,
@@ -54,15 +60,21 @@ def train_2(
     for param in gen_1.parameters():
         param.requires_grad = False
 
-    stage1_checkpoint = torch.load("./checkpoint/Stage1/latest_checkpoint_stage1.pth")
+    blob_1 = bucket.blob("./checkpoint/Stage1/latest_checkpoint_stage1.pth")
+    with tempfile.NamedTemporaryFile() as tmp:
+        blob.download_to_filename(tmp.name)
+        stage1_checkpoint = torch.load(tmp.name)
     textEncoder.load_state_dict(stage1_checkpoint["textEncoder"])
     projection_head.load_state_dict(stage1_checkpoint["projection_head"])
     con_augment_1.load_state_dict(stage1_checkpoint["con_augment_1"])
     gen_1.load_state_dict(stage1_checkpoint["gen_1"])
 
     checkpoint_path = os.path.join(save_dir, "latest_checkpoint_stage2.pth")
-    if os.path.exists(checkpoint_path):
-        checkpoint = torch.load(checkpoint_path)
+    blob_2 = bucket.blob(checkpoint_path)
+    if blob_2.exists():
+        with tempfile.NamedTemporaryFile() as tmp:
+            blob_2.download_to_filename(tmp.name)
+            checkpoint = torch.load(tmp.name)
         start_epoch = checkpoint["epoch"] + 1
         con_augment_2.load_state_dict(checkpoint["con_augment_2"])
         critic_2.load_state_dict(checkpoint["critic_2"])
@@ -149,7 +161,7 @@ def train_2(
                 lr_scheduler_gen_2.step()
                 lr_scheduler_con_augment_2.step()
 
-            if batch_idx % 1000 == 0 and batch_idx > 0:
+            if batch_idx % 100 == 0 and batch_idx > 0:
                 xm.master_print(
                     f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
                     Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
@@ -200,5 +212,15 @@ def train_2(
                 "epoch": epoch,
             }
             checkpoint_epoch_path = f"{save_dir}/epochs/checkpoint_epoch_{epoch}.pth"
-            torch.save(checkpoint, checkpoint_epoch_path)
-            torch.save(checkpoint, checkpoint_path)
+            blob_epoch = bucket.blob(checkpoint_epoch_path)
+            with tempfile.NamedTemporaryFile() as tmp:
+                torch.save(checkpoint, tmp.name)
+                blob_epoch.upload_from_filename(tmp.name)
+            blob = bucket.blob(checkpoint_path)
+            with tempfile.NamedTemporaryFile() as tmp:
+                torch.save(checkpoint, tmp.name)
+                blob.upload_from_filename(tmp.name)
+
+    writer_2.close()
+    writer_real_2.close()
+    writer_fake_2.close()
