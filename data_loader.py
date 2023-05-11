@@ -6,10 +6,9 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 import torch_xla.core.xla_model as xm
+import torch_xla.distributed.parallel_loader as pl
 from transformers import AutoTokenizer
 import torchvision.transforms as transforms
-
-tokenizer = AutoTokenizer.from_pretrained("SpanBERT/spanbert-base-cased")
 
 
 class TexttoImgCOCO(Dataset):
@@ -20,6 +19,8 @@ class TexttoImgCOCO(Dataset):
 
         self.texts = self.df["caption"]
         self.imgs = self.df["file_name"]
+
+        self.tokenizer = AutoTokenizer.from_pretrained("SpanBERT/spanbert-base-cased")
 
     def __len__(self):
         return len(self.df)
@@ -48,26 +49,17 @@ class TexttoImgCOCO(Dataset):
         return text_img_df
 
 
-def get_loader(root, ann_file, transform, batch_size=32, shuffle=True):
-    dataset = TexttoImgCOCO(root, ann_file, transform=transform)
-
-    loader = DataLoader(
-        dataset=dataset,
-        batch_size=batch_size,
-        shuffle=shuffle,
-    )
-
-    return loader, dataset
-
-
 class Collate:
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
     def __call__(self, batch):
         texts = [item[0] for item in batch]
-        tokenized_texts = tokenizer.batch_encode_plus(
+        tokenized_texts = self.tokenizer.batch_encode_plus(
             texts,
             padding="max_length",
             truncation=True,
-            max_length=128,
+            max_length=512,
             return_tensors="pt",
         )
         imgs = [item[1].unsqueeze(0) for item in batch]
@@ -85,7 +77,7 @@ def get_loader(root, ann_file, transform, batch_size=64, shuffle=True):
 
     sampler = DistributedSampler(
         dataset,
-        num_replicas=xm.xrt_world_size(),
+        num_replicas=32,
         rank=xm.get_ordinal(),
         shuffle=shuffle,
     )
@@ -94,7 +86,7 @@ def get_loader(root, ann_file, transform, batch_size=64, shuffle=True):
         dataset=dataset,
         batch_size=batch_size,
         sampler=sampler,
-        collate_fn=Collate(),
+        collate_fn=Collate(dataset.tokenizer),
     )
 
-    return loader
+    return pl.MpDeviceLoader(loader, xm.xla_device())

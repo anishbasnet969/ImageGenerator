@@ -1,40 +1,4 @@
 import torch
-import torchvision.transforms as transforms
-from data_loader import get_loader
-
-batch_size = 2048
-
-my_transform_1 = transforms.Compose(
-    [
-        transforms.ToTensor(),
-        transforms.Resize((64, 64)),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
-    ]
-)
-
-my_transform_2 = transforms.Compose(
-    [
-        transforms.ToTensor(),
-        transforms.Resize((256, 256)),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
-    ]
-)
-
-train_loader_1 = get_loader(
-    root="./dataset/train2017",
-    ann_file="./dataset/annotations/captions_train2017.json",
-    transform=my_transform_1,
-    batch_size=batch_size,
-    shuffle=True,
-)
-
-train_loader_2 = get_loader(
-    root="./dataset/train2017",
-    ann_file="./dataset/annotations/captions_train2017.json",
-    transform=my_transform_2,
-    batch_size=batch_size,
-    shuffle=True,
-)
 
 # embedding_layer = torch.nn.Embedding.from_pretrained(
 #     dataset.vocab.glove.vectors, freeze=True
