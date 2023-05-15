@@ -89,7 +89,7 @@ def get_loader(bucket_name, root, ann_file, transform, batch_size=64, shuffle=Tr
 
     sampler = DistributedSampler(
         dataset,
-        num_replicas=32,
+        num_replicas=xm.xrt_world_size(),
         rank=xm.get_ordinal(),
         shuffle=shuffle,
     )
