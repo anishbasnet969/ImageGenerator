@@ -21,7 +21,6 @@ import os
 
 config = {
     "acceleratorConfig": {"type": "V3", "topology": "4x4"},
-    "acceleratorType": "v3-32",
 }
 
 os.environ["XRT_TPU_CONFIG"] = str(config)
