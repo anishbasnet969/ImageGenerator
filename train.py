@@ -18,15 +18,13 @@ import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
 
 import os
-import json
 
-config_path = "tpu_config.json"
+config = {
+    "acceleratorConfig": {"type": "V3", "topology": "4x4"},
+    "acceleratorType": "v3-32",
+}
 
-with open(config_path, "r") as f:
-    tpu_config = json.load(f)
-
-
-os.environ["XRT_TPU_CONFIG"] = json.dumps(tpu_config)
+os.environ["XRT_TPU_CONFIG"] = str(config)
 
 
 torch.autograd.set_detect_anomaly(True)
