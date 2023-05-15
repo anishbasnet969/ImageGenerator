@@ -20,7 +20,7 @@ import torch_xla.distributed.xla_multiprocessing as xmp
 import os
 import json
 
-config_path = "./tpu_config.json"
+config_path = "tpu_config.json"
 
 with open(config_path, "r") as f:
     tpu_config = json.load(f)
