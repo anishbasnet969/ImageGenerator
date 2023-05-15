@@ -17,6 +17,18 @@ from stage_2_train_fn import train_2
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
 
+import os
+import json
+
+config_path = "./tpu_config.json"
+
+with open(config_path, "r") as f:
+    tpu_config = json.load(f)
+
+
+os.environ["XRT_TPU_CONFIG"] = json.dumps(tpu_config)
+
+
 torch.autograd.set_detect_anomaly(True)
 
 device = xm.xla_device()
