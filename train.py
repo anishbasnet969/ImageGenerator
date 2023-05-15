@@ -23,7 +23,7 @@ config = {
     "acceleratorConfig": {"type": "V3", "topology": "4x4"},
 }
 
-os.environ["XRT_TPU_CONFIG"] = str(config)
+os.putenv("XRT_TPU_CONFIG", str(config))
 
 
 torch.autograd.set_detect_anomaly(True)
