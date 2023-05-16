@@ -156,4 +156,4 @@ def train_xmp(index):
 
 if __name__ == "__main__":
     os.environ["PJRT_DEVICE"] = "TPU"
-    xmp.spawn(train_xmp, start_method="fork")
+    xmp.spawn(train_xmp)
