@@ -31,9 +31,10 @@ def train_2(
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(bucket_name)
 
-    writer_2 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/Stage2")
-    writer_real_2 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/real_2")
-    writer_fake_2 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/fake_2")
+    if xm.is_master_ordinal():
+        writer_2 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/Stage2")
+        writer_real_2 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/real_2")
+        writer_fake_2 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/fake_2")
 
     (
         textEncoder,

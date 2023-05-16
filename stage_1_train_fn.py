@@ -30,9 +30,10 @@ def train_1(
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(bucket_name)
 
-    writer_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/Stage1")
-    writer_real_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/real_1")
-    writer_fake_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/fake_1")
+    if xm.is_master_ordinal():
+        writer_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/Stage1")
+        writer_real_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/real_1")
+        writer_fake_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/fake_1")
 
     textEncoder, projection_head, con_augment_1, critic_1, gen_1 = models
 
