@@ -73,7 +73,6 @@ class Collate:
         imgs = [item[1].unsqueeze(0) for item in batch]
         imgs = torch.cat(imgs, dim=0)
         print(imgs.shape)
-        print(texts.shape)
         return tokenized_texts, imgs
 
 
