@@ -20,6 +20,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 
 import torch_xla.core.xla_model as xm
+import torch_xla.distributed.parallel_loader as pl
 import torch_xla.distributed.xla_backend
 import torch_xla.distributed.xla_multiprocessing as xmp
 import torch_xla.experimental.pjrt_backend
@@ -129,6 +130,8 @@ def train_xmp(index):
         shuffle=True,
     )
 
+    train_loader_1 = pl.MpDeviceLoader(train_loader_1, device)
+
     print("we are here after the train loader 1 initialization")
 
     # train_loader_2 = get_loader(
@@ -163,4 +166,4 @@ def train_xmp(index):
 
 if __name__ == "__main__":
     os.environ["PJRT_DEVICE"] = "TPU"
-    xmp.spawn(train_xmp, daemon=True)
+    xmp.spawn(train_xmp, args=(), daemon=True)
