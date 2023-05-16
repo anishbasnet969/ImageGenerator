@@ -56,9 +56,9 @@ my_transform_2 = transforms.Compose(
 
 def train_xmp(index):
     print(index)
-    # device = xm.xla_device()
-    # print("device initialize vayo ta?")
-    # dist.init_process_group("xla", init_method="pjrt://")
+    device = xm.xla_device()
+    print("device initialize vayo ta?")
+    dist.init_process_group("xla", init_method="pjrt://")
 
     # torch.manual_seed(42)
 
