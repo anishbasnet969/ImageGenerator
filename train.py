@@ -92,47 +92,47 @@ def train_xmp(index):
     gen_2 = DDP(gen_2, gradient_as_bucket_view=True)
     print("DDP")
 
-    # opt_encoder = optim.AdamW(textEncoder.parameters(), lr=5e-5)
-    # opt_projection_head = optim.Adam(
-    #     projection_head.parameters(), lr=lr, betas=(0.9, 0.999)
-    # )
-    # opt_con_augment_1 = optim.Adam(
-    #     con_augment_1.parameters(), lr=lr, betas=(0.9, 0.999)
-    # )
-    # opt_critic_1 = optim.Adam(critic_1.parameters(), lr=lr, betas=(0.9, 0.999))
-    # opt_gen_1 = optim.Adam(gen_1.parameters(), lr=lr, betas=(0.9, 0.999))
+    opt_encoder = optim.AdamW(textEncoder.parameters(), lr=5e-5)
+    opt_projection_head = optim.Adam(
+        projection_head.parameters(), lr=lr, betas=(0.9, 0.999)
+    )
+    opt_con_augment_1 = optim.Adam(
+        con_augment_1.parameters(), lr=lr, betas=(0.9, 0.999)
+    )
+    opt_critic_1 = optim.Adam(critic_1.parameters(), lr=lr, betas=(0.9, 0.999))
+    opt_gen_1 = optim.Adam(gen_1.parameters(), lr=lr, betas=(0.9, 0.999))
 
-    # opt_con_augment_2 = optim.Adam(
-    #     con_augment_2.parameters(), lr=lr, betas=(0.9, 0.999)
-    # )
-    # opt_critic_2 = optim.Adam(critic_2.parameters(), lr=lr, betas=(0.9, 0.999))
-    # opt_gen_2 = optim.Adam(gen_2.parameters(), lr=lr, betas=(0.9, 0.999))
-    # print("optimizers")
+    opt_con_augment_2 = optim.Adam(
+        con_augment_2.parameters(), lr=lr, betas=(0.9, 0.999)
+    )
+    opt_critic_2 = optim.Adam(critic_2.parameters(), lr=lr, betas=(0.9, 0.999))
+    opt_gen_2 = optim.Adam(gen_2.parameters(), lr=lr, betas=(0.9, 0.999))
+    print("optimizers")
 
-    # lr_scheduler_encoder = StepLR(opt_encoder, step_size=100, gamma=0.5)
-    # lr_scheduler_projection_head = StepLR(opt_projection_head, step_size=100, gamma=0.5)
-    # lr_scheduler_con_augment_1 = StepLR(opt_con_augment_1, step_size=100, gamma=0.5)
-    # lr_scheduler_critic_1 = StepLR(opt_critic_1, step_size=100, gamma=0.5)
-    # lr_scheduler_gen_1 = StepLR(opt_gen_1, step_size=100, gamma=0.5)
+    lr_scheduler_encoder = StepLR(opt_encoder, step_size=100, gamma=0.5)
+    lr_scheduler_projection_head = StepLR(opt_projection_head, step_size=100, gamma=0.5)
+    lr_scheduler_con_augment_1 = StepLR(opt_con_augment_1, step_size=100, gamma=0.5)
+    lr_scheduler_critic_1 = StepLR(opt_critic_1, step_size=100, gamma=0.5)
+    lr_scheduler_gen_1 = StepLR(opt_gen_1, step_size=100, gamma=0.5)
 
-    # lr_scheduler_con_augment_2 = StepLR(opt_con_augment_2, step_size=100, gamma=0.5)
-    # lr_scheduler_critic_2 = StepLR(opt_critic_2, step_size=100, gamma=0.5)
-    # lr_scheduler_gen_2 = StepLR(opt_gen_2, step_size=100, gamma=0.5)
+    lr_scheduler_con_augment_2 = StepLR(opt_con_augment_2, step_size=100, gamma=0.5)
+    lr_scheduler_critic_2 = StepLR(opt_critic_2, step_size=100, gamma=0.5)
+    lr_scheduler_gen_2 = StepLR(opt_gen_2, step_size=100, gamma=0.5)
 
-    # print("schedulers")
+    print("schedulers")
 
-    # train_loader_1 = get_loader(
-    #     bucket_name="data-and-checkpoints-bucket",
-    #     root="dataset/train2017",
-    #     ann_file="dataset/annotations/captions_train2017.json",
-    #     transform=my_transform_1,
-    #     batch_size=batch_size,
-    #     shuffle=True,
-    # )
+    train_loader_1 = get_loader(
+        bucket_name="data-and-checkpoints-bucket",
+        root="dataset/train2017",
+        ann_file="dataset/annotations/captions_train2017.json",
+        transform=my_transform_1,
+        batch_size=batch_size,
+        shuffle=True,
+    )
 
-    # train_loader_1 = pl.MpDeviceLoader(train_loader_1, device)
+    train_loader_1 = pl.MpDeviceLoader(train_loader_1, device)
 
-    # print("we are here after the train loader 1 initialization")
+    print("we are here after the train loader 1 initialization")
 
     # # train_loader_2 = get_loader(
     # #     root="dataset/train2017",
