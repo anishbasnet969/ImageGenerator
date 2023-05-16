@@ -55,9 +55,9 @@ my_transform_2 = transforms.Compose(
 
 
 def train_xmp(index):
-    xm.master_print(index)
+    print(index)
     device = xm.xla_device()
-    xm.master_print("device initialize vayo ta?")
+    print("device initialize vayo ta?")
     dist.init_process_group("xla", init_method="pjrt://")
 
     torch.manual_seed(42)
@@ -70,7 +70,7 @@ def train_xmp(index):
     con_augment_2 = ConditioningAugmentation(TEM_SIZE, 256, c_dim).to(device)
     critic_2 = StageIIDiscriminator(TEM_SIZE, Nd).to(device)
     gen_2 = StageIIGenerator().to(device)
-    xm.master_print("model sent to devices")
+    print("model sent to devices")
 
     pjrt.broadcast_master_param(textEncoder)
     pjrt.broadcast_master_param(projection_head)
@@ -80,7 +80,7 @@ def train_xmp(index):
     pjrt.broadcast_master_param(con_augment_2)
     pjrt.broadcast_master_param(critic_2)
     pjrt.broadcast_master_param(gen_2)
-    xm.master_print("broadcast master params")
+    print("broadcast master params")
 
     textEncoder = DDP(textEncoder, gradient_as_bucket_view=True)
     projection_head = DDP(projection_head, gradient_as_bucket_view=True)
@@ -90,7 +90,7 @@ def train_xmp(index):
     con_augment_2 = DDP(con_augment_2, gradient_as_bucket_view=True)
     critic_2 = DDP(critic_2, gradient_as_bucket_view=True)
     gen_2 = DDP(gen_2, gradient_as_bucket_view=True)
-    xm.master_print("DDP")
+    print("DDP")
 
     opt_encoder = optim.AdamW(textEncoder.parameters(), lr=5e-5)
     opt_projection_head = optim.Adam(
@@ -107,7 +107,7 @@ def train_xmp(index):
     )
     opt_critic_2 = optim.Adam(critic_2.parameters(), lr=lr, betas=(0.9, 0.999))
     opt_gen_2 = optim.Adam(gen_2.parameters(), lr=lr, betas=(0.9, 0.999))
-    xm.master_print("optimizers")
+    print("optimizers")
 
     lr_scheduler_encoder = StepLR(opt_encoder, step_size=100, gamma=0.5)
     lr_scheduler_projection_head = StepLR(opt_projection_head, step_size=100, gamma=0.5)
@@ -119,7 +119,7 @@ def train_xmp(index):
     lr_scheduler_critic_2 = StepLR(opt_critic_2, step_size=100, gamma=0.5)
     lr_scheduler_gen_2 = StepLR(opt_gen_2, step_size=100, gamma=0.5)
 
-    xm.master_print("schedulers")
+    print("schedulers")
 
     train_loader_1 = get_loader(
         bucket_name="data-and-checkpoints-bucket",
@@ -132,7 +132,7 @@ def train_xmp(index):
 
     train_loader_1 = pl.MpDeviceLoader(train_loader_1, device)
 
-    xm.master_print("we are here after the train loader 1 initialization")
+    print("we are here after the train loader 1 initialization")
 
     # train_loader_2 = get_loader(
     #     root="dataset/train2017",
