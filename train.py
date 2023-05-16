@@ -82,16 +82,6 @@ def train_xmp(index):
     pjrt.broadcast_master_param(gen_2)
     print("broadcast master params")
 
-    textEncoder = DDP(textEncoder, gradient_as_bucket_view=True)
-    projection_head = DDP(projection_head, gradient_as_bucket_view=True)
-    con_augment_1 = DDP(con_augment_1, gradient_as_bucket_view=True)
-    critic_1 = DDP(critic_1, gradient_as_bucket_view=True)
-    gen_1 = DDP(gen_1, gradient_as_bucket_view=True)
-    con_augment_2 = DDP(con_augment_2, gradient_as_bucket_view=True)
-    critic_2 = DDP(critic_2, gradient_as_bucket_view=True)
-    gen_2 = DDP(gen_2, gradient_as_bucket_view=True)
-    print("DDP")
-
     opt_encoder = optim.AdamW(textEncoder.parameters(), lr=5e-5)
     opt_projection_head = optim.Adam(
         projection_head.parameters(), lr=lr, betas=(0.9, 0.999)
