@@ -95,7 +95,6 @@ def train_1(
             real_img_64 = real_img_64.to(device)
             tokenized_texts = {k: v.to(device) for k, v in tokenized_texts.items()}
             print(real_img_64.shape)
-            print(tokenized_texts)
             current_batch_size = real_img_64.shape[0]
             torch.manual_seed(random.randint(0, 1000))
             mismatched_tokenized_texts = {
