@@ -5,7 +5,8 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 
 from torch.optim.lr_scheduler import StepLR
-from transformers import AutoModel
+
+# from transformers import AutoModel
 from con_augment import ConditioningAugmentation
 from generator_1 import StageIGenerator
 from discrminator_1 import StageIDiscriminator
