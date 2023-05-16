@@ -124,34 +124,34 @@ def train_xmp(index):
 
     print("we are here after the train loader 1 initialization")
 
-    # # train_loader_2 = get_loader(
-    # #     root="dataset/train2017",
-    # #     ann_file="dataset/annotations/captions_train2017.json",
-    # #     transform=my_transform_2,
-    # #     batch_size=batch_size,
-    # #     shuffle=True,
-    # # )
-
-    # train_1(
-    #     models=[textEncoder, projection_head, con_augment_1, critic_1, gen_1],
-    #     optimizers=[
-    #         opt_encoder,
-    #         opt_projection_head,
-    #         opt_con_augment_1,
-    #         opt_critic_1,
-    #         opt_gen_1,
-    #     ],
-    #     schedulers=[
-    #         lr_scheduler_encoder,
-    #         lr_scheduler_projection_head,
-    #         lr_scheduler_con_augment_1,
-    #         lr_scheduler_critic_1,
-    #         lr_scheduler_gen_1,
-    #     ],
-    #     loader=train_loader_1,
-    #     num_epochs=num_epochs,
-    #     device=device,
+    # train_loader_2 = get_loader(
+    #     root="dataset/train2017",
+    #     ann_file="dataset/annotations/captions_train2017.json",
+    #     transform=my_transform_2,
+    #     batch_size=batch_size,
+    #     shuffle=True,
     # )
+
+    train_1(
+        models=[textEncoder, projection_head, con_augment_1, critic_1, gen_1],
+        optimizers=[
+            opt_encoder,
+            opt_projection_head,
+            opt_con_augment_1,
+            opt_critic_1,
+            opt_gen_1,
+        ],
+        schedulers=[
+            lr_scheduler_encoder,
+            lr_scheduler_projection_head,
+            lr_scheduler_con_augment_1,
+            lr_scheduler_critic_1,
+            lr_scheduler_gen_1,
+        ],
+        loader=train_loader_1,
+        num_epochs=num_epochs,
+        device=device,
+    )
 
 
 if __name__ == "__main__":
