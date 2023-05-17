@@ -31,10 +31,8 @@ def train_1(
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(bucket_name)
 
-    if xm.is_master_ordinal():
-        writer_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/Stage1")
-        writer_real_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/real_1")
-        writer_fake_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/fake_1")
+    # if xm.is_master_ordinal():
+    #     writer_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/Stage1")
 
     textEncoder, projection_head, con_augment_1, critic_1, gen_1 = models
 
@@ -124,7 +122,6 @@ def train_1(
                 C_g = torch.cat((c_hat1, noise), dim=1)
                 fake_64 = gen_1(C_g)
 
-
                 critic_1_real = critic_1(real_img_64, tem).view(-1)
 
                 mismatched_encoder_outputs = textEncoder(**mismatched_tokenized_texts)
@@ -138,7 +135,6 @@ def train_1(
                     (critic_1_mismatched, critic_1_fake), dim=0
                 )
 
-
                 gp = gradient_penalty(critic_1, real_img_64, fake_64, tem, device)
 
                 loss_critic = (
@@ -146,7 +142,6 @@ def train_1(
                     - torch.mean(critic_1_real)
                     + lambda_gp * gp
                 )
-
 
                 opt_critic_1.zero_grad()
                 loss_critic.backward(retain_graph=True)
@@ -167,7 +162,7 @@ def train_1(
             xm.optimizer_step(opt_gen_1)
             opt_gen_1.zero_grad()
 
-            print('opt_gen_1 zero grad')
+            print("opt_gen_1 zero grad")
 
             xm.optimizer_step(opt_encoder)
             opt_encoder.zero_grad()
@@ -177,17 +172,16 @@ def train_1(
             xm.optimizer_step(opt_con_augment_1)
             opt_con_augment_1.zero_grad()
 
-            print('opt_con_augment_1 zero grad')
+            print("opt_con_augment_1 zero grad")
             # print(time.time() - time1)
             # time1 = time.time()
-
 
             xm.master_print(
                 f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
                 Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
             )
 
-            print('after master print')
+            print("after master print")
             # print(time.time() - time1)
             # time1 = time.time()
 
@@ -198,49 +192,23 @@ def train_1(
                 lr_scheduler_projection_head.step()
                 lr_scheduler_con_augment_1.step()
 
-            print('after lr scheduler print')
+            print("after lr scheduler print")
             # print(time.time() - time1)
             # time1 = time.time()
 
-            sys.exit()
+            # sys.exit()
 
-            if xm.is_master_ordinal():
-                xm.master_print(
-                    f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
-                    Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
-                )
+            # if xm.is_master_ordinal():
+            #     xm.master_print(
+            #         f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
+            #         Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
+            #     )
 
+            #     writer_1.add_scalar("Critic 1 loss", loss_critic, global_step=step)
+            #     writer_1.add_scalar("Generator 1 loss", lossG, global_step=step)
 
-                with torch.no_grad():
-                    encoder_outputs = textEncoder(**tokenized_texts)
-                    cls_hidden_state = encoder_outputs.last_hidden_state[:, 0, :]
-                    tem = projection_head(cls_hidden_state)
-                    c_hat1, mu1, sigma1 = con_augment_1(tem)
-                    fixed_generator = torch.Generator().manual_seed(456)
-                    fixed_noise = torch.randn(
-                        batch_size, z_dim, generator=fixed_generator
-                    ).to(device)
-                    C_g = torch.cat((c_hat1, fixed_noise), dim=1)
-                    fake_64 = gen_1(C_g)
-                    img_grid_real = torchvision.utils.make_grid(
-                        real_img_64, normalize=True
-                    )
-                    img_grid_fake = torchvision.utils.make_grid(
-                        fake_64[0], normalize=True
-                    )
+            #     step += 1
 
-                    writer_real_1.add_image(
-                        "Real 64*64", img_grid_real, global_step=step
-                    )
-                    writer_fake_1.add_image(
-                        "Fake 64*64", img_grid_fake, global_step=step
-                    )
-
-                writer_1.add_scalar("Critic 1 loss", loss_critic, global_step=step)
-                writer_1.add_scalar("Generator 1 loss", lossG, global_step=step)
-
-                step += 1
-                
         if xm.is_master_ordinal() and epoch % 10 == 0:
             checkpoint = {
                 "textEncoder": textEncoder.state_dict(),
@@ -270,6 +238,4 @@ def train_1(
                 torch.save(checkpoint, tmp.name)
                 blob.upload_from_filename(tmp.name)
 
-    writer_1.close()
-    writer_real_1.close()
-    writer_fake_1.close()
+    # writer_1.close()
