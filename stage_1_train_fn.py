@@ -158,21 +158,20 @@ def train_1(
             )
             lossG = lossG_fake + kl_div
 
+            opt_gen_1.zero_grad()
+            opt_encoder.zero_grad()
+            opt_projection_head.zero_grad()
+            opt_con_augment_1.zero_grad()
             lossG.backward()
             xm.optimizer_step(opt_gen_1)
-            opt_gen_1.zero_grad()
 
-            print("opt_gen_1 zero grad")
+            print("opt_gen_1 step")
 
             xm.optimizer_step(opt_encoder)
-            opt_encoder.zero_grad()
             xm.optimizer_step(opt_projection_head)
-            opt_projection_head.zero_grad()
-
             xm.optimizer_step(opt_con_augment_1)
-            opt_con_augment_1.zero_grad()
 
-            print("opt_con_augment_1 zero grad")
+            print("opt_con_augment_1 step")
             # print(time.time() - time1)
             # time1 = time.time()
 
