@@ -123,8 +123,6 @@ def train_1(
                 C_g = torch.cat((c_hat1, noise), dim=1)
                 fake_64 = gen_1(C_g)
 
-                print('-- Inside n_critic Loop')
-                sys.exit()
 
                 critic_1_real = critic_1(real_img_64, tem).view(-1)
 
@@ -149,6 +147,10 @@ def train_1(
                 opt_critic_1.zero_grad()
                 loss_critic.backward(retain_graph=True)
                 xm.optimizer_step(opt_critic_1, barrier=True)
+
+                print('-- End of a n_critic Loop')
+
+                sys.exit()
 
             output = critic_1(fake_64, tem).view(-1)
             lossG_fake = -torch.mean(output)
