@@ -71,7 +71,7 @@ class Collate:
             texts,
             padding="max_length",
             truncation=True,
-            max_length=512,
+            max_length=128,
             return_tensors="pt",
         )
         imgs = [item[1].unsqueeze(0) for item in batch]
