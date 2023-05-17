@@ -14,8 +14,7 @@ import torchvision.transforms as transforms
 
 
 class TexttoImgCOCO(Dataset):
-    def __init__(self, client, bucket_name, root, ann_file, transform=None):
-        self.client = client
+    def __init__(self, bucket_name, root, ann_file, transform=None):
         self.bucket = self.client.get_bucket(bucket_name)
         self.img_dir = root
         self.df = self.get_text_img_df(ann_file)
@@ -76,16 +75,17 @@ class Collate:
         return tokenized_texts, imgs
 
 
-def get_loader(
-    client, bucket_name, root, ann_file, transform, batch_size=64, shuffle=True
-):
+def get_loader(bucket_name, root, ann_file, transform, batch_size=64, shuffle=True):
     dataset = TexttoImgCOCO(
-        client=client,
         bucket_name=bucket_name,
         root=root,
         ann_file=ann_file,
         transform=transform,
     )
+
+    def _init_fn(worker_id):
+        # Create a new client object in each worker process
+        dataset.client = storage.Client()
 
     sampler = DistributedSampler(
         dataset,
