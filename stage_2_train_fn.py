@@ -107,7 +107,9 @@ def train_2(
             else:
                 seed = None
 
-            seed = xm.all_reduce(xm.REDUCE_OP_SUM, torch.tensor(seed).to(device))
+            seed_tensor = torch.tensor(seed if seed is not None else 0).to(device)
+            seed_tensor = xm.all_reduce("sum", seed_tensor)
+            seed = seed_tensor.item()
             generator = torch.Generator(device=device).manual_seed(seed)
 
             mismatched_tokenized_texts = {
