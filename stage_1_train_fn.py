@@ -182,10 +182,10 @@ def train_1(
             # time1 = time.time()
 
 
-            # xm.master_print(
-            #     f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
-            #     Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
-            # )
+            xm.master_print(
+                f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
+                Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
+            )
 
             print('after master print')
             # print(time.time() - time1)
@@ -202,11 +202,14 @@ def train_1(
             # print(time.time() - time1)
             # time1 = time.time()
 
+            sys.exit()
+
             if xm.is_master_ordinal():
                 xm.master_print(
                     f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
                     Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
                 )
+
 
                 with torch.no_grad():
                     encoder_outputs = textEncoder(**tokenized_texts)
