@@ -1,4 +1,4 @@
-import os
+import os, sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -132,6 +132,8 @@ def train_xmp(index):
     )
 
     print("we are here after the train loader 1 initialization")
+
+    sys.exit()
 
     # train_loader_2 = get_loader(
     #     root="dataset/train2017",
