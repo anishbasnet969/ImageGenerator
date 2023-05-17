@@ -110,7 +110,7 @@ def train_1(
             seed_tensor = torch.tensor(seed if seed is not None else 0).to(device)
             seed_tensor = xm.all_reduce("sum", seed_tensor)
             seed = seed_tensor.item()
-            generator = torch.Generator(device=device).manual_seed(seed)
+            generator = torch.Generator().manual_seed(seed)
 
             mismatched_tokenized_texts = {
                 k: v[torch.randperm(batch_size, generator=generator)].to(device)
@@ -189,7 +189,7 @@ def train_1(
                     cls_hidden_state = encoder_outputs.last_hidden_state[:, 0, :]
                     tem = projection_head(cls_hidden_state)
                     c_hat1, mu1, sigma1 = con_augment_1(tem)
-                    fixed_generator = torch.Generator(device=device).manual_seed(456)
+                    fixed_generator = torch.Generator().manual_seed(456)
                     fixed_noise = torch.randn(
                         batch_size, z_dim, generator=fixed_generator
                     ).to(device)
