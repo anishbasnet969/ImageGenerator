@@ -15,7 +15,7 @@ import torchvision.transforms as transforms
 
 class TexttoImgCOCO(Dataset):
     def __init__(self, bucket_name, root, ann_file, transform=None):
-        self.bucket = self.client.get_bucket(bucket_name)
+        self.bucket_name = bucket_name
         self.img_dir = root
         self.df = self.get_text_img_df(ann_file)
         self.transform = transform
@@ -32,7 +32,9 @@ class TexttoImgCOCO(Dataset):
         text = self.texts[index]
         img_f = self.imgs[index]
 
-        blob = self.bucket.blob(os.path.join(self.img_dir, img_f))
+        client = storage.Client()
+        bucket = client.get_bucket(self.bucket_name)
+        blob = bucket.blob(os.path.join(self.img_dir, img_f))
         img_data = blob.download_as_bytes()
 
         img = Image.open(io.BytesIO(img_data)).convert("RGB")
@@ -43,7 +45,9 @@ class TexttoImgCOCO(Dataset):
         return text, img
 
     def get_text_img_df(self, ann_file):
-        blob = self.bucket.blob(ann_file)
+        client = storage.Client()
+        bucket = client.get_bucket(self.bucket_name)
+        blob = bucket.blob(self.ann_file)
         anns = json.loads(blob.download_as_text())
 
         imgs = anns["images"]
@@ -82,10 +86,6 @@ def get_loader(bucket_name, root, ann_file, transform, batch_size=64, shuffle=Tr
         ann_file=ann_file,
         transform=transform,
     )
-
-    def _init_fn(worker_id):
-        # Create a new client object in each worker process
-        dataset.client = storage.Client()
 
     sampler = DistributedSampler(
         dataset,
