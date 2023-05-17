@@ -113,9 +113,7 @@ def train_1(
                 for k, v in tokenized_texts.items()
             }
             print("--mismatched descriptions")
-            # print(mismatched_tokenized_texts)
             print("mismatched descriptions--")
-            sys.exit()
             for _ in range(n_critic):
                 encoder_outputs = textEncoder(**tokenized_texts)
                 cls_hidden_state = encoder_outputs.last_hidden_state[:, 0, :]
@@ -124,6 +122,9 @@ def train_1(
                 noise = torch.randn(batch_size, z_dim, generator=generator).to(device)
                 C_g = torch.cat((c_hat1, noise), dim=1)
                 fake_64 = gen_1(C_g)
+
+                print('-- Inside n_critic Loop')
+                sys.exit()
 
                 critic_1_real = critic_1(real_img_64, tem).view(-1)
 
