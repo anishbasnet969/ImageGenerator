@@ -137,6 +137,10 @@ def train_1(
                     (critic_1_mismatched, critic_1_fake), dim=0
                 )
 
+                print('-- CCC of a n_critic Loop')
+
+                sys.exit()
+
                 gp = gradient_penalty(critic_1, real_img_64, fake_64, tem, device)
 
                 loss_critic = (
@@ -150,7 +154,6 @@ def train_1(
 
                 print('-- End of a n_critic Loop')
 
-                sys.exit()
 
             output = critic_1(fake_64, tem).view(-1)
             lossG_fake = -torch.mean(output)
