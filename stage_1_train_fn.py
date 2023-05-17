@@ -150,14 +150,10 @@ def train_1(
                 opt_critic_1.zero_grad()
                 loss_critic.backward(retain_graph=True)
 
-                print('-- CCC of a n_critic Loop')
-
                 xm.optimizer_step(opt_critic_1)
-
-                sys.exit()
-
                 print('-- End of a n_critic Loop')
 
+            sys.exit()
 
             output = critic_1(fake_64, tem).view(-1)
             lossG_fake = -torch.mean(output)
@@ -167,15 +163,15 @@ def train_1(
             lossG = lossG_fake + kl_div
 
             lossG.backward()
-            xm.optimizer_step(opt_gen_1, barrier=True)
+            xm.optimizer_step(opt_gen_1)
             opt_gen_1.zero_grad()
 
-            xm.optimizer_step(opt_encoder, barrier=True)
+            xm.optimizer_step(opt_encoder)
             opt_encoder.zero_grad()
-            xm.optimizer_step(opt_projection_head, barrier=True)
+            xm.optimizer_step(opt_projection_head)
             opt_projection_head.zero_grad()
 
-            xm.optimizer_step(opt_con_augment_1, barrier=True)
+            xm.optimizer_step(opt_con_augment_1)
             opt_con_augment_1.zero_grad()
 
             if xm.is_master_ordinal():
