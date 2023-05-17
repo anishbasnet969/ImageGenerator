@@ -6,6 +6,8 @@ import torchvision.transforms as transforms
 
 from torch.optim.lr_scheduler import StepLR
 
+from google.cloud import storage
+
 from transformers import AutoModel
 from con_augment import ConditioningAugmentation
 from generator_1 import StageIGenerator
@@ -111,7 +113,10 @@ def train_xmp(index):
 
     print("schedulers")
 
+    client = storage.Client()
+
     train_loader_1 = get_loader(
+        client=client,
         bucket_name="data-and-checkpoints-bucket",
         root="dataset/train2017",
         ann_file="dataset/annotations/captions_train2017.json",
