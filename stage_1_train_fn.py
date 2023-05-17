@@ -193,10 +193,10 @@ def train_1(
                 lr_scheduler_con_augment_1.step()
 
             print("after lr scheduler print")
-            # print(time.time() - time1)
-            # time1 = time.time()
+            print(time.time() - time1)
+            time1 = time.time()
 
-            # sys.exit()
+            sys.exit()
 
             # if xm.is_master_ordinal():
             #     xm.master_print(
