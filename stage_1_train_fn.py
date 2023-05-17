@@ -176,7 +176,12 @@ def train_1(
             opt_con_augment_1.zero_grad()
 
             print('opt_con_augment_1 zero grad')
-            sys.exit()
+
+
+            xm.master_print(
+                f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
+                Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
+            )
 
             if xm.is_master_ordinal():
                 lr_scheduler_critic_1.step()
@@ -220,6 +225,10 @@ def train_1(
                 writer_1.add_scalar("Generator 1 loss", lossG, global_step=step)
 
                 step += 1
+                
+            print(' batch loop end ' + batch_idx)
+
+        sys.exit()
 
         if xm.is_master_ordinal() and epoch % 10 == 0:
             checkpoint = {
