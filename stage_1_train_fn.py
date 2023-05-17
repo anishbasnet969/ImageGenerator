@@ -195,7 +195,7 @@ def train_1(
             print(time.time() - time1)
             time1 = time.time()
 
-            sys.exit()
+            # sys.exit()
 
             # if xm.is_master_ordinal():
             #     xm.master_print(
