@@ -23,6 +23,7 @@ def train_1(
     loader,
     num_epochs,
     device,
+    batch_size,
     start_epoch=0,
     bucket_name="data-and-checkpoints-bucket",
     save_dir="./checkpoints/Stage1",
@@ -96,10 +97,9 @@ def train_1(
             tokenized_texts = {k: v.to(device) for k, v in tokenized_texts.items()}
             print(tokenized_texts)
             print(real_img_64)
-            current_batch_size = real_img_64.shape[0]
             torch.manual_seed(random.randint(0, 1000))
             mismatched_tokenized_texts = {
-                k: v[torch.randperm(current_batch_size)].to(device)
+                k: v[torch.randperm(batch_size)].to(device)
                 for k, v in tokenized_texts.items()
             }
             for _ in range(n_critic):
@@ -108,7 +108,7 @@ def train_1(
                 tem = projection_head(cls_hidden_state)
                 c_hat1, mu1, sigma1 = con_augment_1(tem)
                 torch.manual_seed(random.randint(0, 1000))
-                noise = torch.randn(current_batch_size, z_dim).to(device)
+                noise = torch.randn(batch_size, z_dim).to(device)
                 C_g = torch.cat((c_hat1, noise), dim=1)
                 fake_64 = gen_1(C_g)
 
@@ -174,7 +174,7 @@ def train_1(
                     tem = projection_head(cls_hidden_state)
                     c_hat1, mu1, sigma1 = con_augment_1(tem)
                     torch.manual_seed(456)
-                    fixed_noise = torch.randn(current_batch_size, z_dim).to(device)
+                    fixed_noise = torch.randn(batch_size, z_dim).to(device)
                     C_g = torch.cat((c_hat1, fixed_noise), dim=1)
                     fake_64 = gen_1(C_g)
                     img_grid_real = torchvision.utils.make_grid(

@@ -87,6 +87,8 @@ def get_loader(bucket_name, root, ann_file, transform, batch_size=64, shuffle=Tr
         dataset=dataset,
         batch_size=batch_size,
         collate_fn=Collate(dataset.tokenizer),
+        shuffle=shuffle,
+        drop_last=True,
     )
 
     return loader

@@ -151,6 +151,7 @@ def train_xmp(index):
         loader=train_loader_1,
         num_epochs=num_epochs,
         device=device,
+        batch_size=batch_size,
     )
 
 
