@@ -146,12 +146,14 @@ def train_1(
                     + lambda_gp * gp
                 )
 
+
+                opt_critic_1.zero_grad()
+                loss_critic.backward(retain_graph=True)
+
                 print('-- CCC of a n_critic Loop')
 
                 sys.exit()
 
-                opt_critic_1.zero_grad()
-                loss_critic.backward(retain_graph=True)
                 xm.optimizer_step(opt_critic_1, barrier=True)
 
                 print('-- End of a n_critic Loop')
