@@ -117,7 +117,7 @@ def train_1(
                 for k, v in tokenized_texts.items()
             }
             print("--mismatched descriptions")
-            print(mismatched_tokenized_texts)
+            # print(mismatched_tokenized_texts)
             print("mismatched descriptions--")
             for _ in range(n_critic):
                 encoder_outputs = textEncoder(**tokenized_texts)
