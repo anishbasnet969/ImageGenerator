@@ -153,7 +153,6 @@ def train_1(
                 xm.optimizer_step(opt_critic_1)
                 print('-- End of a n_critic Loop')
 
-            sys.exit()
 
             output = critic_1(fake_64, tem).view(-1)
             lossG_fake = -torch.mean(output)
@@ -165,6 +164,9 @@ def train_1(
             lossG.backward()
             xm.optimizer_step(opt_gen_1)
             opt_gen_1.zero_grad()
+
+            print('opt_gen_1 zero grad')
+            sys.exit()
 
             xm.optimizer_step(opt_encoder)
             opt_encoder.zero_grad()
