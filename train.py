@@ -120,7 +120,13 @@ def train_xmp(index):
         shuffle=True,
     )
 
-    train_loader_1 = pl.MpDeviceLoader(train_loader_1, device)
+    train_loader_1 = pl.MpDeviceLoader(
+        train_loader_1,
+        device,
+        loader_prefetch_size=8,
+        device_prefetch_size=4,
+        host_to_device_transfer_threads=1,
+    )
 
     print("we are here after the train loader 1 initialization")
 

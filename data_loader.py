@@ -9,6 +9,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from transformers import AutoTokenizer
+import torch_xla.core.xla_model as xm
 import torchvision.transforms as transforms
 
 
@@ -83,12 +84,22 @@ def get_loader(bucket_name, root, ann_file, transform, batch_size=64, shuffle=Tr
         transform=transform,
     )
 
+    sampler = DistributedSampler(
+        dataset,
+        num_replicas=xm.xrt_world_size(),
+        rank=xm.get_ordinal(),
+        shuffle=shuffle,
+    )
+
     loader = DataLoader(
         dataset=dataset,
         batch_size=batch_size,
         collate_fn=Collate(dataset.tokenizer),
-        shuffle=shuffle,
+        sampler=sampler,
         drop_last=True,
+        num_workers=8,
+        persistent_workers=False,
+        prefetch_factor=16,
     )
 
     return loader
