@@ -226,9 +226,8 @@ def train_1(
 
                 step += 1
                 
-            print(' batch loop end ' + batch_idx)
-
-        sys.exit()
+            print(f' batch loop end {batch_idx}')
+            sys.exit()
 
         if xm.is_master_ordinal() and epoch % 10 == 0:
             checkpoint = {
