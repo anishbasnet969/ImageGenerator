@@ -32,7 +32,7 @@ c_dim = 128
 z_dim = 100
 Nd = 128
 num_epochs = 500
-batch_size = 2048
+batch_size = 64
 
 my_transform_1 = transforms.Compose(
     [
