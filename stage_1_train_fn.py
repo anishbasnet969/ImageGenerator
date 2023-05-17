@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, time
 import random
 import torch
 import torchvision
@@ -96,7 +96,6 @@ def train_1(
             real_img_64 = real_img_64.to(device)
             tokenized_texts = {k: v.to(device) for k, v in tokenized_texts.items()}
             print("tokenized texts")
-            print("real imgs")
 
             if xm.is_master_ordinal():
                 seed = torch.randint(0, 2**32 - 1, (1,)).item()
@@ -112,8 +111,10 @@ def train_1(
                 k: v[torch.randperm(batch_size, generator=generator)]
                 for k, v in tokenized_texts.items()
             }
-            print("--mismatched descriptions")
-            print("mismatched descriptions--")
+            print("mismatched descriptions")
+
+            time1 = time.time()
+
             for _ in range(n_critic):
                 encoder_outputs = textEncoder(**tokenized_texts)
                 cls_hidden_state = encoder_outputs.last_hidden_state[:, 0, :]
@@ -151,8 +152,10 @@ def train_1(
                 loss_critic.backward(retain_graph=True)
 
                 xm.optimizer_step(opt_critic_1)
-                print('-- End of a n_critic Loop')
 
+            print('-- End of a n_critic Loop')
+            print(time.time() - time1)
+            time1 = time.time()
 
             output = critic_1(fake_64, tem).view(-1)
             lossG_fake = -torch.mean(output)
@@ -176,6 +179,8 @@ def train_1(
             opt_con_augment_1.zero_grad()
 
             print('opt_con_augment_1 zero grad')
+            print(time.time() - time1)
+            time1 = time.time()
 
 
             xm.master_print(
@@ -183,12 +188,22 @@ def train_1(
                 Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
             )
 
+            print('after master print')
+            print(time.time() - time1)
+            time1 = time.time()
+
+            sys.exit()
+
             if xm.is_master_ordinal():
                 lr_scheduler_critic_1.step()
                 lr_scheduler_gen_1.step()
                 lr_scheduler_encoder.step()
                 lr_scheduler_projection_head.step()
                 lr_scheduler_con_augment_1.step()
+
+            print('after lr scheduler print')
+            print(time.time() - time1)
+            time1 = time.time()
 
             if xm.is_master_ordinal() and batch_idx % 100 == 0 and batch_idx > 0:
                 xm.master_print(
