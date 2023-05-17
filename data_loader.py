@@ -47,7 +47,7 @@ class TexttoImgCOCO(Dataset):
     def get_text_img_df(self, ann_file):
         client = storage.Client()
         bucket = client.get_bucket(self.bucket_name)
-        blob = bucket.blob(self.ann_file)
+        blob = bucket.blob(ann_file)
         anns = json.loads(blob.download_as_text())
 
         imgs = anns["images"]
