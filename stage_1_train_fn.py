@@ -166,7 +166,6 @@ def train_1(
             opt_gen_1.zero_grad()
 
             print('opt_gen_1 zero grad')
-            sys.exit()
 
             xm.optimizer_step(opt_encoder)
             opt_encoder.zero_grad()
@@ -175,6 +174,9 @@ def train_1(
 
             xm.optimizer_step(opt_con_augment_1)
             opt_con_augment_1.zero_grad()
+
+            print('opt_con_augment_1 zero grad')
+            sys.exit()
 
             if xm.is_master_ordinal():
                 lr_scheduler_critic_1.step()
