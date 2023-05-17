@@ -101,9 +101,17 @@ def train_2(
         for batch_idx, (tokenized_texts, real_img_256) in enumerate(loader):
             real_img_256 = real_img_256.to(device)
             tokenized_texts = {k: v.to(device) for k, v in tokenized_texts.items()}
-            torch.manual_seed(random.randint(0, 1000))
+
+            if xm.is_master_ordinal():
+                seed = torch.randint(0, 2**32 - 1, (1,)).item()
+            else:
+                seed = None
+
+            seed = xm.all_reduce(xm.REDUCE_OP_SUM, torch.tensor(seed).to(device))
+            generator = torch.Generator(device=device).manual_seed(seed)
+
             mismatched_tokenized_texts = {
-                k: v[torch.randperm(batch_size)].to(device)
+                k: v[torch.randperm(batch_size, generator=generator)].to(device)
                 for k, v in tokenized_texts.items()
             }
 
@@ -113,7 +121,7 @@ def train_2(
                 tem = projection_head(cls_hidden_state)
                 c_hat1, mu1, sigma1 = con_augment_1(tem)
                 torch.manual_seed(random.randint(0, 1000))
-                noise = torch.randn(batch_size, z_dim).to(device)
+                noise = torch.randn(batch_size, z_dim, generator=generator).to(device)
                 C_g = torch.cat((c_hat1, noise), dim=1)
                 fake_64 = gen_1(C_g)
 
@@ -173,8 +181,10 @@ def train_2(
                     cls_hidden_state = encoder_outputs.last_hidden_state[:, 0, :]
                     tem = projection_head(cls_hidden_state)
                     c_hat1, mu1, sigma1 = con_augment_1(tem)
-                    torch.manual_seed(456)
-                    fixed_noise = torch.randn(batch_size, z_dim).to(device)
+                    fixed_generator = torch.Generator(device=device).manual_seed(456)
+                    fixed_noise = torch.randn(
+                        batch_size, z_dim, generator=fixed_generator
+                    ).to(device)
                     C_g = torch.cat((c_hat1, fixed_noise), dim=1)
                     fake_64 = gen_1(C_g)
 
