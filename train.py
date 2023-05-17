@@ -133,8 +133,6 @@ def train_xmp(index):
 
     print("we are here after the train loader 1 initialization")
 
-    sys.exit()
-
     # train_loader_2 = get_loader(
     #     root="dataset/train2017",
     #     ann_file="dataset/annotations/captions_train2017.json",

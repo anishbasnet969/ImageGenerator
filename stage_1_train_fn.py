@@ -1,4 +1,4 @@
-import os
+import os, sys
 import random
 import torch
 import torchvision
@@ -37,6 +37,8 @@ def train_1(
         writer_fake_1 = SummaryWriter(f"gs://{bucket_name}/runs/ImageGen/fake_1")
 
     textEncoder, projection_head, con_augment_1, critic_1, gen_1 = models
+
+    sys.exit()
 
     (
         opt_encoder,
