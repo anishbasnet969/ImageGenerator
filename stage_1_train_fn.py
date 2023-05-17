@@ -137,9 +137,6 @@ def train_1(
                     (critic_1_mismatched, critic_1_fake), dim=0
                 )
 
-                print('-- CCC of a n_critic Loop')
-
-                sys.exit()
 
                 gp = gradient_penalty(critic_1, real_img_64, fake_64, tem, device)
 
@@ -148,6 +145,11 @@ def train_1(
                     - torch.mean(critic_1_real)
                     + lambda_gp * gp
                 )
+
+                print('-- CCC of a n_critic Loop')
+
+                sys.exit()
+
                 opt_critic_1.zero_grad()
                 loss_critic.backward(retain_graph=True)
                 xm.optimizer_step(opt_critic_1, barrier=True)
