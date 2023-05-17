@@ -70,7 +70,7 @@ class Collate:
             max_length=512,
             return_tensors="pt",
         )
-        imgs = torch.tensor([item[1].unsqueeze(0) for item in batch])
+        imgs = [item[1].unsqueeze(0) for item in batch]
         imgs = torch.cat(imgs, dim=0)
         print(imgs.shape)
         return tokenized_texts, imgs
