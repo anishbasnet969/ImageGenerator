@@ -102,6 +102,7 @@ def train_1(
                 k: v[torch.randperm(batch_size)].to(device)
                 for k, v in tokenized_texts.items()
             }
+            print(mismatched_tokenized_texts)
             for _ in range(n_critic):
                 encoder_outputs = textEncoder(**tokenized_texts)
                 cls_hidden_state = encoder_outputs.last_hidden_state[:, 0, :]
