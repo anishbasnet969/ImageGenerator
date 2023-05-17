@@ -14,9 +14,8 @@ import torchvision.transforms as transforms
 
 
 class TexttoImgCOCO(Dataset):
-    def __init__(self, bucket_name, root, ann_file, transform=None):
-        self.client = storage.Client()
-        self.bucket = self.client.get_bucket(bucket_name)
+    def __init__(self, bucket, root, ann_file, transform=None):
+        self.bucket = bucket
         self.img_dir = root
         self.df = self.get_text_img_df(ann_file)
         self.transform = transform
@@ -77,8 +76,11 @@ class Collate:
 
 
 def get_loader(bucket_name, root, ann_file, transform, batch_size=64, shuffle=True):
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+
     dataset = TexttoImgCOCO(
-        bucket_name=bucket_name,
+        bucket=bucket,
         root=root,
         ann_file=ann_file,
         transform=transform,
