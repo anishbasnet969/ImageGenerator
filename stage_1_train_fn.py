@@ -153,9 +153,8 @@ def train_1(
 
                 xm.optimizer_step(opt_critic_1)
 
-            print('-- End of a n_critic Loop')
-            print(time.time() - time1)
-            time1 = time.time()
+            # print(time.time() - time1)
+            # time1 = time.time()
 
             output = critic_1(fake_64, tem).view(-1)
             lossG_fake = -torch.mean(output)
@@ -179,20 +178,18 @@ def train_1(
             opt_con_augment_1.zero_grad()
 
             print('opt_con_augment_1 zero grad')
-            print(time.time() - time1)
-            time1 = time.time()
+            # print(time.time() - time1)
+            # time1 = time.time()
 
 
-            xm.master_print(
-                f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
-                Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
-            )
+            # xm.master_print(
+            #     f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
+            #     Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
+            # )
 
             print('after master print')
-            print(time.time() - time1)
-            time1 = time.time()
-
-            sys.exit()
+            # print(time.time() - time1)
+            # time1 = time.time()
 
             if xm.is_master_ordinal():
                 lr_scheduler_critic_1.step()
@@ -202,10 +199,10 @@ def train_1(
                 lr_scheduler_con_augment_1.step()
 
             print('after lr scheduler print')
-            print(time.time() - time1)
-            time1 = time.time()
+            # print(time.time() - time1)
+            # time1 = time.time()
 
-            if xm.is_master_ordinal() and batch_idx % 100 == 0 and batch_idx > 0:
+            if xm.is_master_ordinal():
                 xm.master_print(
                     f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
                     Loss D: {loss_critic:.4f}, loss G: {lossG:.4f}"
@@ -241,9 +238,6 @@ def train_1(
 
                 step += 1
                 
-            print(f' batch loop end {batch_idx}')
-            sys.exit()
-
         if xm.is_master_ordinal() and epoch % 10 == 0:
             checkpoint = {
                 "textEncoder": textEncoder.state_dict(),
