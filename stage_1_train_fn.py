@@ -54,34 +54,34 @@ def train_1(
         lr_scheduler_gen_1,
     ) = schedulers
 
-    # checkpoint_path = os.path.join(save_dir, "latest_checkpoint_stage1.pth")
+    checkpoint_path = os.path.join(save_dir, "latest_checkpoint_stage1.pth")
 
-    # blob = bucket.blob(checkpoint_path)
-    # if blob.exists():
-    #     with tempfile.NamedTemporaryFile() as tmp:
-    #         blob.download_to_filename(tmp.name)
-    #         checkpoint = torch.load(tmp.name)
-    #     start_epoch = checkpoint["epoch"] + 1
-    #     textEncoder.load_state_dict(checkpoint["textEncoder"])
-    #     projection_head.load_state_dict(checkpoint["projection_head"])
-    #     con_augment_1.load_state_dict(checkpoint["con_augment_1"])
-    #     critic_1.load_state_dict(checkpoint["critic_1"])
-    #     gen_1.load_state_dict(checkpoint["gen_1"])
-    #     opt_encoder.load_state_dict(checkpoint["opt_encoder"])
-    #     opt_projection_head.load_state_dict(checkpoint["opt_projection_head"])
-    #     opt_con_augment_1.load_state_dict(checkpoint["opt_con_augment_1"])
-    #     opt_critic_1.load_state_dict(checkpoint["opt_critic_1"])
-    #     opt_gen_1.load_state_dict(checkpoint["opt_gen_1"])
-    #     lr_scheduler_encoder.load_state_dict(checkpoint["lr_scheduler_encoder"])
-    #     lr_scheduler_projection_head.load_state_dict(
-    #         checkpoint["lr_scheduler_projection_head"]
-    #     )
-    #     lr_scheduler_con_augment_1.load_state_dict(
-    #         checkpoint["lr_scheduler_con_augment_1"]
-    #     )
-    #     lr_scheduler_critic_1.load_state_dict(checkpoint["lr_scheduler_critic_1"])
-    #     lr_scheduler_gen_1.load_state_dict(checkpoint["lr_scheduler_gen_1"])
-    #     print(f"Loaded checkpoint at epoch {start_epoch-1}")
+    blob = bucket.blob(checkpoint_path)
+    if blob.exists():
+        with tempfile.NamedTemporaryFile() as tmp:
+            blob.download_to_filename(tmp.name)
+            checkpoint = torch.load(tmp.name)
+        start_epoch = checkpoint["epoch"] + 1
+        textEncoder.load_state_dict(checkpoint["textEncoder"])
+        projection_head.load_state_dict(checkpoint["projection_head"])
+        con_augment_1.load_state_dict(checkpoint["con_augment_1"])
+        critic_1.load_state_dict(checkpoint["critic_1"])
+        gen_1.load_state_dict(checkpoint["gen_1"])
+        opt_encoder.load_state_dict(checkpoint["opt_encoder"])
+        opt_projection_head.load_state_dict(checkpoint["opt_projection_head"])
+        opt_con_augment_1.load_state_dict(checkpoint["opt_con_augment_1"])
+        opt_critic_1.load_state_dict(checkpoint["opt_critic_1"])
+        opt_gen_1.load_state_dict(checkpoint["opt_gen_1"])
+        lr_scheduler_encoder.load_state_dict(checkpoint["lr_scheduler_encoder"])
+        lr_scheduler_projection_head.load_state_dict(
+            checkpoint["lr_scheduler_projection_head"]
+        )
+        lr_scheduler_con_augment_1.load_state_dict(
+            checkpoint["lr_scheduler_con_augment_1"]
+        )
+        lr_scheduler_critic_1.load_state_dict(checkpoint["lr_scheduler_critic_1"])
+        lr_scheduler_gen_1.load_state_dict(checkpoint["lr_scheduler_gen_1"])
+        print(f"Loaded checkpoint at epoch {start_epoch-1}")
 
     step = 0  # Tensorboard Global Step
 
@@ -152,9 +152,9 @@ def train_1(
 
                 print('-- CCC of a n_critic Loop')
 
-                sys.exit()
+                xm.optimizer_step(opt_critic_1)
 
-                xm.optimizer_step(opt_critic_1, barrier=True)
+                sys.exit()
 
                 print('-- End of a n_critic Loop')
 
