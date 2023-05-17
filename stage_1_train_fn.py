@@ -95,12 +95,8 @@ def train_1(
         for batch_idx, (tokenized_texts, real_img_64) in enumerate(loader):
             real_img_64 = real_img_64.to(device)
             tokenized_texts = {k: v.to(device) for k, v in tokenized_texts.items()}
-            print("--tokenized texts")
-            print(tokenized_texts)
-            print("tokenized texts--")
-            print("--real imgs")
-            print(real_img_64)
-            print("real imgs--")
+            print("tokenized texts")
+            print("real imgs")
 
             if xm.is_master_ordinal():
                 seed = torch.randint(0, 2**32 - 1, (1,)).item()
@@ -113,7 +109,7 @@ def train_1(
             generator = torch.Generator().manual_seed(seed)
 
             mismatched_tokenized_texts = {
-                k: v[torch.randperm(batch_size, generator=generator)].to(device)
+                k: v[torch.randperm(batch_size, generator=generator)]
                 for k, v in tokenized_texts.items()
             }
             print("--mismatched descriptions")
