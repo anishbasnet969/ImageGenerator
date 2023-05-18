@@ -168,4 +168,4 @@ if __name__ == "__main__":
     key_path = "text-to-image-385613-efef8b380ef7.json"
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
     os.environ["PJRT_DEVICE"] = "TPU"
-    xmp.spawn(train_xmp, args=(), daemon=True)
+    xmp.spawn(train_xmp, args=())
