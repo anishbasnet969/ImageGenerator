@@ -2,3 +2,9 @@
 /__pycache__/
 /.vector_cache/
 /runs/
+/v2_implementation/checkpoints/
+/v2_implementation/CLIP/
+/v2_implementation/taming-transformers/
+/v2_implementation/taming/
+/v2_implementation/steps/
+/v2_implementation/outputs/
