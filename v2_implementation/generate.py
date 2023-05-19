@@ -307,6 +307,12 @@ class Prompt(nn.Module):
         )
 
 
+def split_prompt(prompt):
+    vals = prompt.rsplit(":", 2)
+    vals = vals + ["", "1", "-inf"][len(vals) :]
+    return vals[0], float(vals[1]), float(vals[2])
+
+
 class MakeCutouts(nn.Module):
     def __init__(self, cut_size, cutn, cut_pow=1.0):
         super().__init__()
@@ -404,168 +410,143 @@ class MakeCutouts(nn.Module):
         return batch
 
 
-class MakeCutoutsPoolingUpdate(nn.Module):
-    def __init__(self, cut_size, cutn, cut_pow=1.0):
-        super().__init__()
-        self.cut_size = cut_size
-        self.cutn = cutn
-        self.cut_pow = cut_pow  # Not used with pooling
+def load_vqgan_model(config_path, checkpoint_path):
+    config = OmegaConf.load(config_path)
+    if config.model.target == "taming.models.vqgan.VQModel":
+        model = vqgan.VQModel(**config.model.params)
+        model.eval().requires_grad_(False)
+        model.init_from_ckpt(checkpoint_path)
+    elif config.model.target == "taming.models.cond_transformer.Net2NetTransformer":
+        parent_model = cond_transformer.Net2NetTransformer(**config.model.params)
+        parent_model.eval().requires_grad_(False)
+        parent_model.init_from_ckpt(checkpoint_path)
+        model = parent_model.first_stage_model
+    else:
+        raise ValueError(f"unknown model type: {config.model.target}")
+    del model.loss
+    return model
 
-        self.augs = nn.Sequential(
-            K.RandomAffine(degrees=15, translate=0.1, p=0.7, padding_mode="border"),
-            K.RandomPerspective(0.7, p=0.7),
-            K.ColorJitter(hue=0.1, saturation=0.1, p=0.7),
-            K.RandomErasing((0.1, 0.4), (0.3, 1 / 0.3), same_on_batch=True, p=0.7),
+
+def resize_image(image, out_size):
+    ratio = image.size[0] / image.size[1]
+    area = min(image.size[0] * image.size[1], out_size[0] * out_size[1])
+    size = round((area * ratio) ** 0.5), round((area / ratio) ** 0.5)
+    return image.resize(size, Image.LANCZOS)
+
+
+device = torch.device(args.cuda_device)
+model = load_vqgan_model(args.vqgan_config, args.vqgan_checkpoint).to(device)
+jit = False
+perceptor = (
+    clip.load(args.clip_model, jit=jit)[0].eval().requires_grad_(False).to(device)
+)
+
+cut_size = perceptor.visual.input_resolution
+f = 2 ** (model.decoder.num_resolutions - 1)
+
+if args.cut_method == "latest":
+    make_cutouts = MakeCutouts(cut_size, args.cutn, cut_pow=args.cut_pow)
+
+toksX, toksY = args.size[0] // f, args.size[1] // f
+sideX, sideY = toksX * f, toksY * f
+
+e_dim = model.quantize.e_dim
+n_toks = model.quantize.n_e
+z_min = model.quantize.embedding.weight.min(dim=0).values[None, :, None, None]
+z_max = model.quantize.embedding.weight.max(dim=0).values[None, :, None, None]
+
+one_hot = F.one_hot(
+    torch.randint(n_toks, [toksY * toksX], device=device), n_toks
+).float()
+z = one_hot @ model.quantize.embedding.weight
+z = z.view([-1, toksY, toksX, e_dim]).permute(0, 3, 1, 2)
+
+z_orig = z.clone()
+z.requires_grad_(True)
+
+pMs = []
+normalize = transforms.Normalize(
+    mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711]
+)
+
+if args.prompts:
+    for prompt in args.prompts:
+        txt, weight, stop = split_prompt(prompt)
+        embed = perceptor.encode_text(clip.tokenize(txt).to(device)).float()
+        pMs.append(Prompt(embed, weight, stop).to(device))
+
+opt = optim.Adam([z], lr=args.step_size)
+
+if args.seed is None:
+    seed = torch.seed()
+else:
+    seed = args.seed
+torch.manual_seed(seed)
+print("Using seed:", seed)
+
+
+def synth(z):
+    z_q = vector_quantize(z.movedim(1, 3), model.quantize.embedding.weight).movedim(
+        3, 1
+    )
+    return clamp_with_grad(model.decode(z_q).add(1).div(2), 0, 1)
+
+
+@torch.inference_mode()
+def checkin(i, losses):
+    losses_str = ", ".join(f"{loss.item():g}" for loss in losses)
+    tqdm.write(f"i: {i}, loss: {sum(losses).item():g}, losses: {losses_str}")
+    out = synth(z)
+    info = PngImagePlugin.PngInfo()
+    info.add_text("comment", f"{args.prompts}")
+    TF.to_pil_image(out[0].cpu()).save(args.output, pnginfo=info)
+
+
+def ascend_txt():
+    global i
+    out = synth(z)
+    iii = perceptor.encode_image(normalize(make_cutouts(out))).float()
+
+    result = []
+
+    if args.init_weight:
+        # result.append(F.mse_loss(z, z_orig) * args.init_weight / 2)
+        result.append(
+            F.mse_loss(z, torch.zeros_like(z_orig))
+            * ((1 / torch.tensor(i * 2 + 1)) * args.init_weight)
+            / 2
         )
 
-        self.noise_fac = 0.1
-        self.av_pool = nn.AdaptiveAvgPool2d((self.cut_size, self.cut_size))
-        self.max_pool = nn.AdaptiveMaxPool2d((self.cut_size, self.cut_size))
-
-    def forward(self, input):
-        sideY, sideX = input.shape[2:4]
-        max_size = min(sideX, sideY)
-        min_size = min(sideX, sideY, self.cut_size)
-        cutouts = []
-
-        for _ in range(self.cutn):
-            cutout = (self.av_pool(input) + self.max_pool(input)) / 2
-            cutouts.append(cutout)
-
-        batch = self.augs(torch.cat(cutouts, dim=0))
-
-        if self.noise_fac:
-            facs = batch.new_empty([self.cutn, 1, 1, 1]).uniform_(0, self.noise_fac)
-            batch = batch + facs * torch.randn_like(batch)
-        return batch
+    for prompt in pMs:
+        result.append(prompt(iii))
 
 
-# An Nerdy updated version with selectable Kornia augments, but no pooling:
-class MakeCutoutsNRUpdate(nn.Module):
-    def __init__(self, cut_size, cutn, cut_pow=1.0):
-        super().__init__()
-        self.cut_size = cut_size
-        self.cutn = cutn
-        self.cut_pow = cut_pow
-        self.noise_fac = 0.1
+def train(i):
+    opt.zero_grad(set_to_none=True)
+    lossAll = ascend_txt()
 
-        # Pick your own augments & their order
-        augment_list = []
-        for item in args.augments[0]:
-            if item == "Ji":
-                augment_list.append(
-                    K.ColorJitter(
-                        brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1, p=0.7
-                    )
-                )
-            elif item == "Sh":
-                augment_list.append(K.RandomSharpness(sharpness=0.3, p=0.5))
-            elif item == "Gn":
-                augment_list.append(K.RandomGaussianNoise(mean=0.0, std=1.0, p=0.5))
-            elif item == "Pe":
-                augment_list.append(K.RandomPerspective(distortion_scale=0.5, p=0.7))
-            elif item == "Ro":
-                augment_list.append(K.RandomRotation(degrees=15, p=0.7))
-            elif item == "Af":
-                augment_list.append(
-                    K.RandomAffine(
-                        degrees=30,
-                        translate=0.1,
-                        shear=5,
-                        p=0.7,
-                        padding_mode="zeros",
-                        keepdim=True,
-                    )
-                )  # border, reflection, zeros
-            elif item == "Et":
-                augment_list.append(K.RandomElasticTransform(p=0.7))
-            elif item == "Ts":
-                augment_list.append(
-                    K.RandomThinPlateSpline(scale=0.8, same_on_batch=True, p=0.7)
-                )
-            elif item == "Cr":
-                augment_list.append(
-                    K.RandomCrop(
-                        size=(self.cut_size, self.cut_size),
-                        pad_if_needed=True,
-                        padding_mode="reflect",
-                        p=0.5,
-                    )
-                )
-            elif item == "Er":
-                augment_list.append(
-                    K.RandomErasing(
-                        scale=(0.1, 0.4),
-                        ratio=(0.3, 1 / 0.3),
-                        same_on_batch=True,
-                        p=0.7,
-                    )
-                )
-            elif item == "Re":
-                augment_list.append(
-                    K.RandomResizedCrop(
-                        size=(self.cut_size, self.cut_size),
-                        scale=(0.1, 1),
-                        ratio=(0.75, 1.333),
-                        cropping_mode="resample",
-                        p=0.5,
-                    )
-                )
+    if i % args.display_freq == 0:
+        checkin(i, lossAll)
 
-        self.augs = nn.Sequential(*augment_list)
+    loss = sum(lossAll)
+    loss.backward()
+    opt.step()
 
-    def forward(self, input):
-        sideY, sideX = input.shape[2:4]
-        max_size = min(sideX, sideY)
-        min_size = min(sideX, sideY, self.cut_size)
-        cutouts = []
-        for _ in range(self.cutn):
-            size = int(
-                torch.rand([]) ** self.cut_pow * (max_size - min_size) + min_size
-            )
-            offsetx = torch.randint(0, sideX - size + 1, ())
-            offsety = torch.randint(0, sideY - size + 1, ())
-            cutout = input[:, :, offsety : offsety + size, offsetx : offsetx + size]
-            cutouts.append(resample(cutout, (self.cut_size, self.cut_size)))
-        batch = self.augs(torch.cat(cutouts, dim=0))
-        if self.noise_fac:
-            facs = batch.new_empty([self.cutn, 1, 1, 1]).uniform_(0, self.noise_fac)
-            batch = batch + facs * torch.randn_like(batch)
-        return batch
+    with torch.inference_mode():
+        z.copy_(z.maximum(z_min).minimum(z_max))
 
 
-# An updated version with Kornia augments, but no pooling:
-class MakeCutoutsUpdate(nn.Module):
-    def __init__(self, cut_size, cutn, cut_pow=1.0):
-        super().__init__()
-        self.cut_size = cut_size
-        self.cutn = cutn
-        self.cut_pow = cut_pow
-        self.augs = nn.Sequential(
-            K.RandomHorizontalFlip(p=0.5),
-            K.ColorJitter(hue=0.01, saturation=0.01, p=0.7),
-            # K.RandomSolarize(0.01, 0.01, p=0.7),
-            K.RandomSharpness(0.3, p=0.4),
-            K.RandomAffine(degrees=30, translate=0.1, p=0.8, padding_mode="border"),
-            K.RandomPerspective(0.2, p=0.4),
-        )
-        self.noise_fac = 0.1
+i = 0
 
-    def forward(self, input):
-        sideY, sideX = input.shape[2:4]
-        max_size = min(sideX, sideY)
-        min_size = min(sideX, sideY, self.cut_size)
-        cutouts = []
-        for _ in range(self.cutn):
-            size = int(
-                torch.rand([]) ** self.cut_pow * (max_size - min_size) + min_size
-            )
-            offsetx = torch.randint(0, sideX - size + 1, ())
-            offsety = torch.randint(0, sideY - size + 1, ())
-            cutout = input[:, :, offsety : offsety + size, offsetx : offsetx + size]
-            cutouts.append(resample(cutout, (self.cut_size, self.cut_size)))
-        batch = self.augs(torch.cat(cutouts, dim=0))
-        if self.noise_fac:
-            facs = batch.new_empty([self.cutn, 1, 1, 1]).uniform_(0, self.noise_fac)
-            batch = batch + facs * torch.randn_like(batch)
-        return batch
+try:
+    with tqdm() as pbar:
+        while True:
+            train(i)
+
+            if i == args.max_iterations:
+                break
+
+            i += 1
+            pbar.update()
+except KeyboardInterrupt:
+    pass
