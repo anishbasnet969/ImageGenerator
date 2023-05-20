@@ -1,7 +1,5 @@
 from tqdm import tqdm
-
-from omegaconf import OmegaConf
-from taming.models import cond_transformer, vqgan
+from load_vqgan import load_vqgan_model
 
 import torch
 from torch import nn, optim
@@ -12,14 +10,13 @@ from torchvision.transforms import functional as TF
 torch.backends.cudnn.benchmark = False
 
 from CLIP import clip
-import kornia.augmentation as K
 from PIL import ImageFile, PngImagePlugin
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 from arg_parser import get_parser
-from vision_utils import resample, random_gradient_image,  random_noise_image
-from utils import ReplaceGrad, ClampWithGrad
+from vision_utils import MakeCutouts, random_gradient_image, random_noise_image
+from utils import ReplaceGrad, ClampWithGrad, split_prompt
 
 import warnings
 
@@ -38,7 +35,6 @@ if args.prompts:
     args.prompts = stripped_phrases.split("|")
 
 replace_grad = ReplaceGrad.apply
-
 
 clamp_with_grad = ClampWithGrad.apply
 
@@ -70,64 +66,6 @@ class Prompt(nn.Module):
             self.weight.abs()
             * replace_grad(dists, torch.maximum(dists, self.stop)).mean()
         )
-
-
-def split_prompt(prompt):
-    vals = prompt.rsplit(":", 2)
-    vals = vals + ["", "1", "-inf"][len(vals) :]
-    return vals[0], float(vals[1]), float(vals[2])
-
-
-class MakeCutouts(nn.Module):
-    def __init__(self, cut_size, cutn, cut_pow=1.0):
-        super().__init__()
-        self.cut_size = cut_size
-        self.cutn = cutn
-        self.cut_pow = cut_pow
-        self.augs = nn.Sequential(
-            K.RandomHorizontalFlip(p=0.5),
-            K.ColorJitter(hue=0.01, saturation=0.01, p=0.7),
-            K.RandomSharpness(0.3, p=0.4),
-            K.RandomAffine(degrees=30, translate=0.1, p=0.8, padding_mode="border"),
-            K.RandomPerspective(0.2, p=0.4),
-        )
-        self.noise_fac = 0.1
-
-    def forward(self, input):
-        sideY, sideX = input.shape[2:4]
-        max_size = min(sideX, sideY)
-        min_size = min(sideX, sideY, self.cut_size)
-        cutouts = []
-        for _ in range(self.cutn):
-            size = int(
-                torch.rand([]) ** self.cut_pow * (max_size - min_size) + min_size
-            )
-            offsetx = torch.randint(0, sideX - size + 1, ())
-            offsety = torch.randint(0, sideY - size + 1, ())
-            cutout = input[:, :, offsety : offsety + size, offsetx : offsetx + size]
-            cutouts.append(resample(cutout, (self.cut_size, self.cut_size)))
-        batch = self.augs(torch.cat(cutouts, dim=0))
-        if self.noise_fac:
-            facs = batch.new_empty([self.cutn, 1, 1, 1]).uniform_(0, self.noise_fac)
-            batch = batch + facs * torch.randn_like(batch)
-        return batch
-
-
-def load_vqgan_model(config_path, checkpoint_path):
-    config = OmegaConf.load(config_path)
-    if config.model.target == "taming.models.vqgan.VQModel":
-        model = vqgan.VQModel(**config.model.params)
-        model.eval().requires_grad_(False)
-        model.init_from_ckpt(checkpoint_path)
-    elif config.model.target == "taming.models.cond_transformer.Net2NetTransformer":
-        parent_model = cond_transformer.Net2NetTransformer(**config.model.params)
-        parent_model.eval().requires_grad_(False)
-        parent_model.init_from_ckpt(checkpoint_path)
-        model = parent_model.first_stage_model
-    else:
-        raise ValueError(f"unknown model type: {config.model.target}")
-    del model.loss
-    return model
 
 
 device = torch.device(args.cuda_device)
