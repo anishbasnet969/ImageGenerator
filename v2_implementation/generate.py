@@ -519,6 +519,8 @@ def ascend_txt():
 
     for prompt in pMs:
         result.append(prompt(iii))
+    
+    return result
 
 
 def train(i):
