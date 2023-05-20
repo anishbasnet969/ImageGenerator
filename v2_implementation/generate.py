@@ -144,9 +144,6 @@ args = parser.parse_args()
 if args.cudnn_determinism:
     torch.backends.cudnn.deterministic = True
 
-if not args.augments:
-    args.augments = [["Af", "Pe", "Ji", "Er"]]
-
 if not args.cuda_device == "cpu" and not torch.cuda.is_available():
     args.cuda_device = "cpu"
 
