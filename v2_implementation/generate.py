@@ -338,7 +338,8 @@ def train(i):
     opt.zero_grad(set_to_none=True)
     lossAll = ascend_txt()
 
-    checkin(i, lossAll)
+    if i % args.display_freq == 0:
+        checkin(i, lossAll)
 
     loss = sum(lossAll)
     loss.backward()
