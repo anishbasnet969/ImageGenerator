@@ -30,6 +30,7 @@ from subprocess import Popen, PIPE
 import re
 
 from vision_utils import random_noise_image, random_gradient_image, resample
+from utils import ReplaceGrad, ClampWithGrad
 
 import warnings
 
@@ -150,36 +151,7 @@ if not args.cuda_device == "cpu" and not torch.cuda.is_available():
     args.cuda_device = "cpu"
 
 
-class ReplaceGrad(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x_forward, x_backward):
-        ctx.shape = x_backward.shape
-        return x_forward
-
-    @staticmethod
-    def backward(ctx, grad_in):
-        return None, grad_in.sum_to_size(ctx.shape)
-
-
 replace_grad = ReplaceGrad.apply
-
-
-class ClampWithGrad(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input, min, max):
-        ctx.min = min
-        ctx.max = max
-        ctx.save_for_backward(input)
-        return input.clamp(min, max)
-
-    @staticmethod
-    def backward(ctx, grad_in):
-        (input,) = ctx.saved_tensors
-        return (
-            grad_in * (grad_in * (input - input.clamp(ctx.min, ctx.max)) >= 0),
-            None,
-            None,
-        )
 
 
 clamp_with_grad = ClampWithGrad.apply
@@ -323,6 +295,7 @@ torch.manual_seed(seed)
 print("Using seed:", seed)
 
 
+# Vector quantization
 def synth(z):
     z_q = vector_quantize(z.movedim(1, 3), model.quantize.embedding.weight).movedim(
         3, 1
