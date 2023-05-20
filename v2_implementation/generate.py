@@ -91,11 +91,24 @@ n_toks = model.quantize.n_e
 z_min = model.quantize.embedding.weight.min(dim=0).values[None, :, None, None]
 z_max = model.quantize.embedding.weight.max(dim=0).values[None, :, None, None]
 
-one_hot = F.one_hot(
-    torch.randint(n_toks, [toksY * toksX], device=device), n_toks
-).float()
-z = one_hot @ model.quantize.embedding.weight
-z = z.view([-1, toksY, toksX, e_dim]).permute(0, 3, 1, 2)
+if args.init_noise == "pixels":
+    img = random_noise_image(args.size[0], args.size[1])
+    pil_image = img.convert("RGB")
+    pil_image = pil_image.resize((sideX, sideY), Image.LANCZOS)
+    pil_tensor = TF.to_tensor(pil_image)
+    z, *_ = model.encode(pil_tensor.to(device).unsqueeze(0) * 2 - 1)
+elif args.init_noise == "gradient":
+    img = random_gradient_image(args.size[0], args.size[1])
+    pil_image = img.convert("RGB")
+    pil_image = pil_image.resize((sideX, sideY), Image.LANCZOS)
+    pil_tensor = TF.to_tensor(pil_image)
+    z, *_ = model.encode(pil_tensor.to(device).unsqueeze(0) * 2 - 1)
+else:
+    one_hot = F.one_hot(
+        torch.randint(n_toks, [toksY * toksX], device=device), n_toks
+    ).float()
+    z = one_hot @ model.quantize.embedding.weight
+    z = z.view([-1, toksY, toksX, e_dim]).permute(0, 3, 1, 2)
 
 z_orig = z.clone()
 z.requires_grad_(True)
@@ -121,7 +134,6 @@ torch.manual_seed(seed)
 print("Using seed:", seed)
 
 
-# Vector quantization
 def synth(z):
     z_q = vector_quantize(z.movedim(1, 3), model.quantize.embedding.weight).movedim(
         3, 1
@@ -147,7 +159,6 @@ def ascend_txt():
     result = []
 
     if args.init_weight:
-        # result.append(F.mse_loss(z, z_orig) * args.init_weight / 2)
         result.append(
             F.mse_loss(z, torch.zeros_like(z_orig))
             * ((1 / torch.tensor(i * 2 + 1)) * args.init_weight)
