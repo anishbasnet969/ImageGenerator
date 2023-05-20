@@ -167,6 +167,9 @@ if not args.augments:
 if not args.cuda_device == "cpu" and not torch.cuda.is_available():
     args.cuda_device = "cpu"
 
+if args.prompts:
+    stripped_phrases = args.prompts.strip()
+    args.prompts = stripped_phrases.split("|")
 
 def sinc(x):
     return torch.where(x != 0, torch.sin(math.pi * x) / (math.pi * x), x.new_ones([]))
