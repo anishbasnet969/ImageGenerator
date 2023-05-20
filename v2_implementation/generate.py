@@ -1,10 +1,4 @@
-import argparse
-import math
-import random
-from urllib.request import urlopen
 from tqdm import tqdm
-import sys
-import os
 
 from omegaconf import OmegaConf
 from taming.models import cond_transformer, vqgan
@@ -19,17 +13,12 @@ torch.backends.cudnn.benchmark = False
 
 from CLIP import clip
 import kornia.augmentation as K
-import numpy as np
-import imageio
-
-from PIL import ImageFile, Image, PngImagePlugin, ImageChops
+from PIL import ImageFile, PngImagePlugin
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-from subprocess import Popen, PIPE
-import re
-
-from vision_utils import random_noise_image, random_gradient_image, resample
+from arg_parser import get_parser
+from vision_utils import resample, random_gradient_image,  random_noise_image
 from utils import ReplaceGrad, ClampWithGrad
 
 import warnings
@@ -38,111 +27,8 @@ warnings.filterwarnings("ignore")
 
 default_image_size = 128
 
-parser = argparse.ArgumentParser(description="ImageGenv2 using VQGAN+CLIP")
-
-parser.add_argument(
-    "-p", "--prompts", type=str, help="Text prompts", default=None, dest="prompts"
-)
-parser.add_argument(
-    "-i",
-    "--iterations",
-    type=int,
-    help="Number of iterations",
-    default=200,
-    dest="max_iterations",
-)
-parser.add_argument(
-    "-se",
-    "--save_every",
-    type=int,
-    help="Save image iterations",
-    default=20,
-    dest="display_freq",
-)
-parser.add_argument(
-    "-s",
-    "--size",
-    nargs=2,
-    type=int,
-    help="Image size (width height) (default: %(default)s)",
-    default=[default_image_size, default_image_size],
-    dest="size",
-)
-parser.add_argument(
-    "-iw",
-    "--init_weight",
-    type=float,
-    help="Initial weight",
-    default=0.0,
-    dest="init_weight",
-)
-parser.add_argument(
-    "-m",
-    "--clip_model",
-    type=str,
-    help="CLIP model (e.g. ViT-B/32, ViT-B/16)",
-    default="ViT-B/32",
-    dest="clip_model",
-)
-parser.add_argument(
-    "-conf",
-    "--vqgan_config",
-    type=str,
-    help="VQGAN config",
-    default=f"checkpoints/vqgan_imagenet_f16_16384.yaml",
-    dest="vqgan_config",
-)
-parser.add_argument(
-    "-ckpt",
-    "--vqgan_checkpoint",
-    type=str,
-    help="VQGAN checkpoint",
-    default=f"checkpoints/vqgan_imagenet_f16_16384.ckpt",
-    dest="vqgan_checkpoint",
-)
-parser.add_argument(
-    "-lr",
-    "--learning_rate",
-    type=float,
-    help="Learning rate",
-    default=0.1,
-    dest="step_size",
-)
-parser.add_argument(
-    "-cuts", "--num_cuts", type=int, help="Number of cuts", default=32, dest="cutn"
-)
-parser.add_argument(
-    "-cutp", "--cut_power", type=float, help="Cut power", default=1.0, dest="cut_pow"
-)
-parser.add_argument("-sd", "--seed", type=int, help="Seed", default=None, dest="seed")
-parser.add_argument(
-    "-d",
-    "--deterministic",
-    action="store_true",
-    help="Enable cudnn.deterministic?",
-    dest="cudnn_determinism",
-)
-parser.add_argument(
-    "-cd",
-    "--cuda_device",
-    type=str,
-    help="Cuda device to use",
-    default="cuda:0",
-    dest="cuda_device",
-)
-parser.add_argument(
-    "-o",
-    "--output",
-    type=str,
-    help="Output image filename",
-    default="output.png",
-    dest="output",
-)
-
+parser = get_parser(default_image_size=default_image_size)
 args = parser.parse_args()
-
-if args.cudnn_determinism:
-    torch.backends.cudnn.deterministic = True
 
 if not args.cuda_device == "cpu" and not torch.cuda.is_available():
     args.cuda_device = "cpu"
@@ -252,10 +138,12 @@ perceptor = (
 )
 
 cut_size = perceptor.visual.input_resolution
+cutn = 32
+cut_pow = 1.0
 f = 2 ** (model.decoder.num_resolutions - 1)
 
 
-make_cutouts = MakeCutouts(cut_size, args.cutn, cut_pow=args.cut_pow)
+make_cutouts = MakeCutouts(cut_size, cutn, cut_pow=cut_pow)
 
 toksX, toksY = args.size[0] // f, args.size[1] // f
 sideX, sideY = toksX * f, toksY * f
@@ -316,7 +204,7 @@ def checkin(i, losses):
 def ascend_txt():
     global i
     out = synth(z)
-    iii = perceptor.encode_image(normalize(make_cutouts(out))).float()
+    image_embeddings = perceptor.encode_image(normalize(make_cutouts(out))).float()
 
     result = []
 
@@ -329,7 +217,7 @@ def ascend_txt():
         )
 
     for prompt in pMs:
-        result.append(prompt(iii))
+        result.append(prompt(image_embeddings))
 
     return result
 
