@@ -147,6 +147,14 @@ parser.add_argument(
     default="cuda:0",
     dest="cuda_device",
 )
+parser.add_argument(
+    "-o",
+    "--output",
+    type=str,
+    help="Output image filename",
+    default="output.png",
+    dest="output",
+)
 
 args = parser.parse_args()
 
