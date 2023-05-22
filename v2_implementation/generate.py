@@ -91,7 +91,7 @@ n_toks = model.quantize.n_e
 z_min = model.quantize.embedding.weight.min(dim=0).values[None, :, None, None]
 z_max = model.quantize.embedding.weight.max(dim=0).values[None, :, None, None]
 
-if args.init_noise == "pixels":
+if args.init_noise == "random":
     img = random_noise_image(args.size[0], args.size[1])
     pil_image = img.convert("RGB")
     pil_image = pil_image.resize((sideX, sideY), Image.LANCZOS)
