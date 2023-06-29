@@ -10,7 +10,7 @@ from torchvision.transforms import functional as TF
 torch.backends.cudnn.benchmark = False
 
 from CLIP import clip
-from PIL import ImageFile, PngImagePlugin
+from PIL import ImageFile, PngImagePlugin, Image
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -91,7 +91,7 @@ n_toks = model.quantize.n_e
 z_min = model.quantize.embedding.weight.min(dim=0).values[None, :, None, None]
 z_max = model.quantize.embedding.weight.max(dim=0).values[None, :, None, None]
 
-if args.init_noise == "pixels":
+if args.init_noise == "random":
     img = random_noise_image(args.size[0], args.size[1])
     pil_image = img.convert("RGB")
     pil_image = pil_image.resize((sideX, sideY), Image.LANCZOS)
@@ -157,13 +157,6 @@ def ascend_txt():
     image_embeddings = perceptor.encode_image(normalize(make_cutouts(out))).float()
 
     result = []
-
-    if args.init_weight:
-        result.append(
-            F.mse_loss(z, torch.zeros_like(z_orig))
-            * ((1 / torch.tensor(i * 2 + 1)) * args.init_weight)
-            / 2
-        )
 
     for prompt in pMs:
         result.append(prompt(image_embeddings))

@@ -28,23 +28,15 @@ def get_parser(default_image_size):
         "--size",
         nargs=2,
         type=int,
-        help="Image size (width height) (default: %(default)s)",
+        help="Image size, width height",
         default=[default_image_size, default_image_size],
         dest="size",
-    )
-    parser.add_argument(
-        "-iw",
-        "--init_weight",
-        type=float,
-        help="Initial weight",
-        default=0.0,
-        dest="init_weight",
     )
     parser.add_argument(
         "-m",
         "--clip_model",
         type=str,
-        help="CLIP model (e.g. ViT-B/32, ViT-B/16)",
+        help="CLIP model",
         default="ViT-B/32",
         dest="clip_model",
     )
@@ -52,7 +44,7 @@ def get_parser(default_image_size):
         "-conf",
         "--vqgan_config",
         type=str,
-        help="VQGAN config",
+        help="VQGAN configuration",
         default=f"checkpoints/vqgan_imagenet_f16_16384.yaml",
         dest="vqgan_config",
     )
@@ -95,7 +87,7 @@ def get_parser(default_image_size):
         "-in",
         "--init_noise",
         type=str,
-        help="Initial noise image (pixels or gradient)",
+        help="Initial noise image (random or gradient)",
         default=None,
         dest="init_noise",
     )
